@@ -69,8 +69,27 @@
     </div>
     <div id="main">
       <div id="map"></div>
+      <div id="toolbars">
+        <button id="markers">add markers</button>
+        <button id="circles">add markers</button>
+        <button id="polygons">add markers</button>
+        <button id="popups">add popups</button>
+      </div>
     </div>
   <script>
+      var map;
+      var createViz = function (){
+        
+        map = L.map('map').setView([51.505, -0.09], 13);
+        L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+            maxZoom: 18,
+            id: 'mapbox/streets-v11',
+            tileSize: 512,
+            zoomOffset: -1,
+            accessToken: 'pk.eyJ1IjoibHV1dXV1bmEiLCJhIjoiY2t3bmp2MXRsMmt1czJwbnZ2ZWJqYmc2aiJ9.bN47LX5kw_O6ClfXzmeRTg'
+        }).addTo(map);   
+      }
       const ip = 'localhost';
       const port = 3000;
       $(function(){
@@ -107,32 +126,44 @@
             })
           });
         });	
-        //发送消息
-        $("#send").click(function(e){     
-            var msg  = $('#message').val(),
-                to = $('#select').val();
-            socket.emit('private message',userName,to,msg);
-            let $message_list = $('#message_list');
-            $message_list.append(`<li><span class='rt'><span class='name'>${msg}&nbsp;&nbsp;<small>to:${to}</small></span></span></li>`);
-            $('#message').val('');
+        // //发送消息
+        // $("#send").click(function(e){     
+        //     var msg  = $('#message').val(),
+        //         to = $('#select').val();
+        //     socket.emit('private message',userName,to,msg);
+        //     let $message_list = $('#message_list');
+        //     $message_list.append(`<li><span class='rt'><span class='name'>${msg}&nbsp;&nbsp;<small>to:${to}</small></span></span></li>`);
+        //     $('#message').val('');
+        // });
+
+        $("#markers").click(function(e){     
+          var marker = L.marker([51.5, -0.09]).addTo(map);
         });
+        $("#circles").click(function(e){     
+          var circle = L.circle([51.508, -0.11], {
+              color: 'red',
+              fillColor: '#f03',
+              fillOpacity: 0.5,
+              radius: 500
+          }).addTo(map);
+
+        });
+
+        $("#polygons").click(function(e){     
+          var polygon = L.polygon([
+              [51.509, -0.08],
+              [51.503, -0.06],
+              [51.51, -0.047]
+          ]).addTo(map);
+
+        });
+
+
+
       });
+
+        
       
-    </script>
-    <script>
-      var createViz = function (){
-      var map = L.map('map').setView([51.505, -0.09], 13);
-
-        L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
-            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-            maxZoom: 18,
-            id: 'mapbox/streets-v11',
-            tileSize: 512,
-            zoomOffset: -1,
-            accessToken: 'pk.eyJ1IjoibHV1dXV1bmEiLCJhIjoiY2t3bmp2MXRsMmt1czJwbnZ2ZWJqYmc2aiJ9.bN47LX5kw_O6ClfXzmeRTg'
-        }).addTo(map);  
-      }
-
     </script>
   </body>
 </html>
