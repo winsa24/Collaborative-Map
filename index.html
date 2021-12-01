@@ -1,0 +1,138 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="format-detection" content="telephone=no"/>
+    <meta name="format-detection" content="email=no"/>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=0" name="viewport">
+    <title>Collaborative Map</title>
+        
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+    integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+    crossorigin=""/>
+      <!-- Make sure you put this AFTER Leaflet's CSS -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+    integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+    crossorigin=""></script>
+
+    <script src="https://cdn.bootcss.com/jquery/3.4.1/jquery.min.js"></script>
+    <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+    <style>
+      #map { height: 680px; }
+
+      li{
+        list-style: none;
+        margin-bottom: 10px;
+      }
+      #message_list li{
+        height:40px;
+        clear: both;
+      }
+      li span.name{
+        max-width: 300px;
+        padding:10px 20px;
+        background:#af1;
+        border-radius: 5px;
+      }
+      li i{
+        margin:0 10px;
+        display: inline-block;
+        font-style: normal;
+        width:40px;height:40px;
+        text-align: center;
+        line-height: 40px;
+        border-radius: 50%;
+        border:1px solid #af1;
+      }
+      #message_list{
+        padding:20px;
+        max-width: 600px;
+        min-height:300px;
+        border:1px solid #ccc;
+      }
+      .rt{
+        float: right;
+      }
+    </style>
+  </head>
+  <body onload="createViz()">
+    <!-- login-->
+    <div id='login_div'>
+      Username：<input id="user_name" type="text"><button type="button" id="login">Login</button>
+    </div>
+    <div id="div"  style="display:none">
+      <p>online user：<span id='online'></span></p>
+
+      <p>Activities：</p>
+      <ul id='message_status'></ul>
+    </div>
+    <div id="main">
+      <div id="map"></div>
+    </div>
+  <script>
+      const ip = 'localhost';
+      const port = 3000;
+      $(function(){
+        var onlineUsers = [],socket,userName = '';
+        //登录
+        $("#login").on("click",function(){
+          $('#login_div').hide()
+          socket = io(`ws://${ip}:${port}`);
+          socket.on('connect', function (data) {              
+            userName = $('#user_name').val();
+            socket.emit('new user',userName);
+            $('#div').show();
+
+            //获得当前在线人员
+            socket.on("online users",function(data){
+              if(data.length>onlineUsers.length){
+                $('#message_status').append(`<li><b>${data.slice(-1)[0]}</b>&nbsp;enter&nbsp;${new Date().toLocaleTimeString()}</li>`);
+              }
+              $('#online').html(data.join(','));
+              onlineUsers = data;
+              console.log("update online user number："+onlineUsers.length);
+              let $select = $('#select');
+              $select.empty();
+              for(var j=0; j< onlineUsers.length; j++){
+                if(userName!=onlineUsers[j]){
+                  var option = $("<option value='"+onlineUsers[j]+"'>"+onlineUsers[j]+"</option>");
+                  $select.append(option);
+                }
+              }
+            });
+            // 退出聊天室
+            socket.on('user disconnected',function(name){
+              $('#message_status').append(`<li><b>${name.slice(-1)[0]}</b>&nbsp;quite&nbsp;${new Date().toLocaleTimeString()}</li>`);
+            })
+          });
+        });	
+        //发送消息
+        $("#send").click(function(e){     
+            var msg  = $('#message').val(),
+                to = $('#select').val();
+            socket.emit('private message',userName,to,msg);
+            let $message_list = $('#message_list');
+            $message_list.append(`<li><span class='rt'><span class='name'>${msg}&nbsp;&nbsp;<small>to:${to}</small></span></span></li>`);
+            $('#message').val('');
+        });
+      });
+      
+    </script>
+    <script>
+      var createViz = function (){
+      var map = L.map('map').setView([51.505, -0.09], 13);
+
+        L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+            maxZoom: 18,
+            id: 'mapbox/streets-v11',
+            tileSize: 512,
+            zoomOffset: -1,
+            accessToken: 'pk.eyJ1IjoibHV1dXV1bmEiLCJhIjoiY2t3bmp2MXRsMmt1czJwbnZ2ZWJqYmc2aiJ9.bN47LX5kw_O6ClfXzmeRTg'
+        }).addTo(map);  
+      }
+
+    </script>
+  </body>
+</html>
