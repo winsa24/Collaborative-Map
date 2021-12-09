@@ -1,8 +1,12 @@
 class cMarker extends cElement
 {
-	constructor(map, L, user)
+	constructor(user, position)
 	{
 		super(user);
-		this.marker = L.marker([51.5, -0.09]).addTo(map);
+		this.marker = L.marker(position).addTo(map);
+	}
+	RemoveElementFromMap()
+	{
+		super.RemoveElementFromMap();
 	}
 }

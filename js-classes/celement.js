@@ -4,6 +4,11 @@ class cElement 	// c_ollaborative_Element
 	{
 		this.lastUser = user;
 	}
+	RemoveElementFromMap()
+	{
+		// do nothing for now, maybe add js node stuff later
+		// mainly used to be derivated to remove the element of the ap
+	}
 
 	SetLastUser(newUser)
 	{
@@ -12,6 +17,7 @@ class cElement 	// c_ollaborative_Element
 			// Replace if already existing
 			// Else add only if local was the last user
 		this.lastUser = newUser;
+		// Or change element color
 	}
 	GetLastUser()
 	{

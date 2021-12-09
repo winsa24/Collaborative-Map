@@ -9,6 +9,7 @@ const CollaborativeElementEnum = {
 
 var currUser = new cUser("User_00", "#f03");
 var map;
+var currentCategory = CollaborativeElementEnum.Marker;
 var createViz = function (){
 	map = L.map('map').setView([51.505, -0.09], 13);
 	L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
@@ -18,7 +19,11 @@ var createViz = function (){
 		tileSize: 512,
 		zoomOffset: -1,
 		accessToken: 'pk.eyJ1IjoibHV1dXV1bmEiLCJhIjoiY2t3bmp2MXRsMmt1czJwbnZ2ZWJqYmc2aiJ9.bN47LX5kw_O6ClfXzmeRTg'
-	}).addTo(map);   
+	}).addTo(map); 
+
+	map.on('click', function(e) {
+		mapOnClick(e.latlng.lat, e.latlng.lng, !!e.shiftKey);		
+	}); 
 }
 
 var setUserColor = function()
@@ -27,6 +32,61 @@ var setUserColor = function()
 	currUser = new cUser(currUser.GetUserName(), colorInput.value);
 }
 
+// =========== Set Map On Click ==============
+
+var mapOnClick = function(lat, lng, shiftDown)
+{
+	console.log(lat,lng);
+	// try to select an element to edit it...
+
+	// no element found : add one
+	switch(currentCategory) {
+		case CollaborativeElementEnum.Marker:
+			addMarker(lat,lng);
+			break;
+		case CollaborativeElementEnum.Circle:
+			addCircle(lat,lng);
+			break;
+		case CollaborativeElementEnum.Polygon:
+			addPolygon(lat,lng, shiftDown);
+			break;
+		case CollaborativeElementEnum.Popup:
+			addPopup(lat,lng);
+			break;
+	  }
+}
+var addMarker  = function(lat, lng)
+{
+	var marker = new cMarker(currUser, [lat, lng]);
+}
+var addCircle  = function(lat, lng)
+{
+	var circle = new cCircle(currUser, [lat, lng], 500);
+}
+var polyPositions = [];
+var addPolygon  = function(lat, lng, shiftDown)
+{
+	if (polyPositions.length > 2)
+	{
+		console.log(shiftDown);
+		if (shiftDown)
+			polyPositions.push([lat,lng]);
+		else
+		{
+			var polygon = new cPolygon(currUser, polyPositions);
+			polyPositions = [];
+		}
+	}
+	else
+		polyPositions.push([lat,lng]);
+}
+var addPopup  = function(lat, lng)
+{
+	//var circle = new cCircle(currUser, [lat, lng], 500);
+}
+
+
+// ===========================================
 
 const ip = 'localhost';
 const port = 3000;
@@ -74,27 +134,17 @@ $(function(){
 	//     $('#message').val('');
 	// });
 
-	$("#markers").click(function(e){     
-		var marker = new cMarker(map, L, currUser);
+	$("#markers").click(function(e){
+		currentCategory = CollaborativeElementEnum.Marker;
 	});
-	$("#circles").click(function(e){     
-		/*var circle = L.circle([51.508, -0.11], {
-			color: 'red',
-			fillColor: '#f03',
-			fillOpacity: 0.5,
-			radius: 500
-		}).addTo(map);*/
-
-		var circle = new cCircle(map, L, currUser, [51.508, -0.11], 500);
+	$("#circles").click(function(e){  
+		currentCategory = CollaborativeElementEnum.Circle;
 	});
-
-	$("#polygons").click(function(e){     
-		var polygon = L.polygon([
-			[51.509, -0.08],
-			[51.503, -0.06],
-			[51.51, -0.047]
-		]).addTo(map);
-
+	$("#polygons").click(function(e){
+		currentCategory = CollaborativeElementEnum.Polygon;
+	});
+	$("#popups").click(function(e){
+		currentCategory = CollaborativeElementEnum.Popup;
 	});
 });
 

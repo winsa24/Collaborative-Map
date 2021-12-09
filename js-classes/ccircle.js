@@ -1,6 +1,6 @@
 class cCircle extends cElement
 {
-	constructor(map, L, user, position, radius)
+	constructor(user, position, radius)
 	{
 		super(user);
 		this.circle = L.circle(position, {
