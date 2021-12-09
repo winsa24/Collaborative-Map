@@ -1,4 +1,5 @@
 //引入依赖并创建实例
+var express = require('express');
 let app = require('express')();//引入express模块
 let http = require('http').Server(app);//引入HTTP模块并启动服务
 let io = require('socket.io')(http);//引入socket.io模块
@@ -10,8 +11,10 @@ http.listen(port,()=>{
 })
 
 app.get('/', function(req, res){
-    res.sendFile(__dirname + '/index.html'); // change the path to your index.html
+    res.sendFile(__dirname + '/public/index.html'); // change the path to your index.html
 });
+
+app.use("/static", express.static('./static/'));
 
 //创建变量
 let users = {};//接收所有用户的对象{name1,name2,name3}
