@@ -9,6 +9,8 @@ const CollaborativeElementEnum = {
 
 var currUser = new cUser("User_00", "#f03");
 var map;
+var mapops = [];
+let msg;
 var currentCategory = CollaborativeElementEnum.Marker;
 var createViz = function (){
 	map = L.map('map').setView([51.505, -0.09], 13);
@@ -22,7 +24,8 @@ var createViz = function (){
 	}).addTo(map); 
 
 	map.on('click', function(e) {
-		mapOnClick(e.latlng.lat, e.latlng.lng, !!e.shiftKey);		
+		msg = {'lat': e.latlng.lat, 'lng': e.latlng.lng, 'shiftDown': e.shiftKey, 'cat': currentCategory};
+		// mapOnClick(e.latlng.lat, e.latlng.lng, !!e.shiftKey);		
 	}); 
 }
 
@@ -33,10 +36,10 @@ var setUserColor = function()
 }
 
 // =========== Set Map On Click ==============
-
+// TODO : var mapOnClick = function(lat, lng, shiftDown, category, username, usercolor)
 var mapOnClick = function(lat, lng, shiftDown)
 {
-	console.log(lat,lng);
+	console.log(lat,lng);	
 	// try to select an element to edit it...
 
 	// no element found : add one
@@ -91,48 +94,41 @@ var addPopup  = function(lat, lng)
 const ip = 'localhost';
 const port = 3000;
 $(function(){
-	var onlineUsers = [],socket,userName = '';
-	//登录
+	var onlineUsers = [],socket,userName = '',userColor = '';
+	
+
+	//login
 	$("#login").on("click",function(){
 		$('#login_div').hide()
 		socket = io(`ws://${ip}:${port}`);
 		socket.on('connect', function (data) {              
 			userName = $('#user_name').val();
-			socket.emit('new user',userName);
+			userColor = $('#user_color').val();
+			var tmp = {'name':userName, 'color':userColor};
+			socket.emit('new user', tmp);
 			$('#div').show();
-
+			
 			//获得当前在线人员
 			socket.on("online users",function(data){
+				console.log("get online users: " + data);
 				if(data.length>onlineUsers.length){
-					$('#message_status').append(`<li><b>${data.slice(-1)[0]}</b>&nbsp;enter&nbsp;${new Date().toLocaleTimeString()}</li>`);
+					console.log(data.at(-1));
+					$('#message_status').append(`<li><b>${data.at(-1).name}</b>&nbsp;<b>${data.at(-1).color}</b>&nbsp;enter&nbsp;${new Date().toLocaleTimeString()}</li>`);
 				}
-				$('#online').html(data.join(','));
+				var onlineUsersNames = data.map((item)=>{
+					return item.name;
+				})
+				$('#online').html(onlineUsersNames.join(','));
 				onlineUsers = data;
 				console.log("update online user number："+onlineUsers.length);
-				let $select = $('#select');
-				$select.empty();
-				for(var j=0; j< onlineUsers.length; j++){
-					if(userName!=onlineUsers[j]){
-						var option = $("<option value='"+onlineUsers[j]+"'>"+onlineUsers[j]+"</option>");
-						$select.append(option);
-					}
-				}
 			});
 			// 退出聊天室
 			socket.on('user disconnected',function(name){
 					$('#message_status').append(`<li><b>${name.slice(-1)[0]}</b>&nbsp;quite&nbsp;${new Date().toLocaleTimeString()}</li>`);
 			})
+
 		});
 	});	
-	// //发送消息
-	// $("#send").click(function(e){     
-	//     var msg  = $('#message').val(),
-	//         to = $('#select').val();
-	//     socket.emit('private message',userName,to,msg);
-	//     let $message_list = $('#message_list');
-	//     $message_list.append(`<li><span class='rt'><span class='name'>${msg}&nbsp;&nbsp;<small>to:${to}</small></span></span></li>`);
-	//     $('#message').val('');
-	// });
 
 	$("#markers").click(function(e){
 		currentCategory = CollaborativeElementEnum.Marker;
@@ -146,6 +142,30 @@ $(function(){
 	$("#popups").click(function(e){
 		currentCategory = CollaborativeElementEnum.Popup;
 	});
+
+	$("#map").click(function(e){
+		msg.name = userName;
+		msg.color = userColor;
+		console.log("socket emit update map: " + msg.cat);
+		socket = io(`ws://${ip}:${port}`);
+		socket.on('connect', function (data) {  
+			
+			socket.emit('message', msg);
+			console.log("after emit: " + msg);
+			socket.on('update map', function (data) {
+				// let $message_list = $('#message_list');
+				// $message_list.append(`<li><span><span class='name'>${data.name}&nbsp;<small>${data.cat}</small></span></span></li>`);
+
+				mapOnClick(data.lat, data.lng, !!data.shiftKey);		
+				//TODO: mapOnClick(data.lat, data.lng, !!data.shiftKey, data.cat, data.name, data.color);
+			});
+
+		})
+		
+	});
+
+	
+	
 });
 
 
