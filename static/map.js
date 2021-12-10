@@ -9,7 +9,6 @@ const CollaborativeElementEnum = {
 
 var currUser = new cUser("User_00", "#f03");
 var map;
-var mapops = [];
 let msg;
 var currentCategory = CollaborativeElementEnum.Marker;
 var createViz = function (){
@@ -58,6 +57,7 @@ var mapOnClick = function(lat, lng, shiftDown)
 			break;
 	  }
 }
+// TODO: add color
 var addMarker  = function(lat, lng)
 {
 	var marker = new cMarker(currUser, [lat, lng]);
@@ -107,8 +107,15 @@ $(function(){
 			var tmp = {'name':userName, 'color':userColor};
 			socket.emit('new user', tmp);
 			$('#div').show();
+			$('#main').show();
 			
-			//获得当前在线人员
+			socket.on('initial map', function(ops){
+				ops.forEach(data => {
+					mapOnClick(data.lat, data.lng, !!data.shiftKey);		
+				//TODO: mapOnClick(data.lat, data.lng, !!data.shiftKey, data.cat, data.name, data.color);
+				});
+			})
+
 			socket.on("online users",function(data){
 				console.log("get online users: " + data);
 				if(data.length>onlineUsers.length){
@@ -122,7 +129,7 @@ $(function(){
 				onlineUsers = data;
 				console.log("update online user number："+onlineUsers.length);
 			});
-			// 退出聊天室
+
 			socket.on('user disconnected',function(name){
 					$('#message_status').append(`<li><b>${name.slice(-1)[0]}</b>&nbsp;quite&nbsp;${new Date().toLocaleTimeString()}</li>`);
 			})
