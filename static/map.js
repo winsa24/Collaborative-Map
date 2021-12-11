@@ -152,6 +152,8 @@ $(function(){
 			$('#div').show();
 			$('#main').show();
 			map.invalidateSize();
+
+			showPopup(`Connected as ${userName} !`, AlertColor.Connected);
 		});
 
 		socket.on("online users", function(data){
@@ -170,8 +172,9 @@ $(function(){
 			*/
 		});
 
-		socket.on('user disconnected',function(name){
-			$('#message_status').append(`<li><b>${name.slice(-1)[0]}</b>&nbsp;quite&nbsp;${new Date().toLocaleTimeString()}</li>`);
+		socket.on('user disconnected', function(name){
+			//$('#message_status').append(`<li><b>${name.slice(-1)[0]}</b>&nbsp;quite&nbsp;${new Date().toLocaleTimeString()}</li>`);
+			showPopup(`${name.slice(-1)[0]} has left.`, AlertColor.Leaving);
 		})
 
 		
