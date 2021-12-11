@@ -1,7 +1,7 @@
-var express = require('express');
-let app = require('express')();
-let http = require('http').Server(app);
-let io = require('socket.io')(http);
+const express = require('express');
+const app = express();
+const http = require('http').Server(app);
+const io = require('socket.io')(http);
 
 const port = 3000;
 http.listen(port,()=>{
@@ -25,38 +25,41 @@ let users = {};//store all users{name1,name2,name3}
 let onlineUsers = [];//store all online users[{name:, color:, socket:,}...]
 var mapOps = []; //user operations 
 
-io.on('connection',function(socket){
-  socket.on('message',(msg)=>{
-    mapOps.push(msg);
-    console.log("receive msg: " + msg);
-    io.emit('update map',msg);
-  });
+io.on('connection', function(socket){
+	console.log("User Connected" + socket.id);
 
-  socket.on('new user',(data)=>{
-    // add only when new user not in users (never login before)
-    if(!(data.name in users)){
-      users[data.name] = socket;
-      onlineUsers.push(data);
-    }
-    io.emit('online users', onlineUsers);
-    io.emit('initial map', mapOps);
-  });
- 
-  
-  socket.on('disconnect',()=>{
-    let logoutUserName;
-    for(let obj in users){
-      if(users[obj]==socket){
-        logoutUserName = obj;
-        delete users[obj];
-      }
-    }
-    for(let i in onlineUsers){
-      if(onlineUsers[i]==logoutUserName){
-        onlineUsers.splice(i,1);
-      }
-    }
-    io.emit('online users',onlineUsers);
-    io.emit('user disconnected',logoutUserName);
-  })
+	socket.on('message',(msg)=>{
+		mapOps.push(msg);
+		console.log("receive msg: [" + msg.name + ", " + msg.type + ", [" + msg.lat + "," + msg.lng + "], " + msg.cat + "]");
+		io.emit('update map', msg);	
+		// socket.broadcast.emit(...) eveyry one but socket
+	});
+
+	socket.on('new user',(data)=>{
+		// add only when new user not in users (never logged before)
+		if(!(data.name in users)){
+			users[data.name] = socket;
+			onlineUsers.push(data);
+		}
+		io.emit('online users', onlineUsers);
+		socket.emit('initial map', mapOps);
+	});
+	
+	
+	socket.on('disconnect',()=>{
+		let logoutUserName;
+		for(let obj in users){
+			if(users[obj]==socket){
+				logoutUserName = obj;
+				delete users[obj];
+			}
+		}
+		for(let i in onlineUsers){
+			if(onlineUsers[i]==logoutUserName){
+				onlineUsers.splice(i,1);
+			}
+		}
+		io.emit('online users',onlineUsers);
+		io.emit('user disconnected',logoutUserName);
+	})
 })
