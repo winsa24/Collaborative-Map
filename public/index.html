@@ -20,7 +20,9 @@
 		<script src="http://localhost:3000/socket.io/socket.io.js"></script>
 		
 		<style>
-		#map { height: 680px; }
+		#map {
+			height: 680px;
+		}
 
 		li{
 			list-style: none;
@@ -62,7 +64,7 @@
 		<!-- login-->
 		<div id='login_div'>
 		Username：	<input id="user_name" type="text"><button type="button" id="login">Login</button>
-					<input id="user_color" type="color" value="#228c4e" onchange="setUserColor()">
+					<input id="user_color" type="color" value="#228c4e" >
 		</div>
 		<div id="div"  style="display:none">
 			<p>online user：<span id='online'></span></p>

@@ -4,8 +4,8 @@ class cCircle extends cElement
 	{
 		super(user);
 		this.circle = L.circle(position, {
-			color: user.GetUserColor(),		// It has the color of its original user
-			fillColor: user.GetUserColor(),	//				''
+			color: user.GetUserColor(),
+			fillColor: user.GetUserColor(),
 			fillOpacity: 0.5,
 			radius: radius
 		}).addTo(map);

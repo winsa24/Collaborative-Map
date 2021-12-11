@@ -12,7 +12,6 @@ const CollaborativeElementEnum = {
 };
 
 
-var currUser = new cUser("User_00", "#f03");
 var map;
 let msg;
 var currentCategory = CollaborativeElementEnum.Marker;
@@ -29,12 +28,7 @@ var createViz = function (){
 	}).addTo(map); 
 
 	map.on('click', function(e){ mapOnClick(e); }); 
-	map.on('moveend', function(e){ mapOnPan(); }); 
-}
-var setUserColor = function()
-{
-	const colorInput = document.getElementById("user_color");
-	currUser = new cUser(currUser.GetUserName(), colorInput.value);
+	map.on('moveend', function(e){ mapOnPan(); });
 }
 
 // =========== Set Map On CallBacks ==============
@@ -59,9 +53,8 @@ var mapOnPan = function()
 
 // =========== Element Addition ==============
 // TODO: add color
-var addElement = function(category, lat, lng, shiftDown)	// Add an element locally, called by node_AddElement and on login only
+var addElement = function(category, lat, lng, shiftDown)	// Add an element locally called by event callbacks
 {
-	console.log(category);
 	switch(category) {
 		case CollaborativeElementEnum.Marker:
 			addMarker(lat,lng);
@@ -80,42 +73,37 @@ var addElement = function(category, lat, lng, shiftDown)	// Add an element local
 
 var addMarker  = function(lat, lng)
 {
-	var marker = new cMarker(currUser, [lat, lng]);
+	var marker = new cMarker(localUser, [lat, lng]);
 }
 var addCircle  = function(lat, lng)
 {
-	var circle = new cCircle(currUser, [lat, lng], 500);
+	var circle = new cCircle(localUser, [lat, lng], 500);
 }
-var polyPositions = [];
+//var polyPositions = [];
 var addPolygon  = function(lat, lng, shiftDown)
 {
-	if (polyPositions.length > 2)
+	/*if (polyPositions.length > 2)
 	{
 		console.log(shiftDown);
 		if (shiftDown)
 			polyPositions.push([lat,lng]);
 		else
 		{
-			var polygon = new cPolygon(currUser, polyPositions);
+			var polygon = new cPolygon(localUser, polyPositions);
 			polyPositions = [];
 		}
 	}
 	else
-		polyPositions.push([lat,lng]);
+		polyPositions.push([lat,lng]);*/
 }
 var addPopup  = function(lat, lng)
 {
-	//var circle = new cCircle(currUser, [lat, lng], 500);
+	//var circle = new cCircle(localUser, [lat, lng], 500);
 }
 // ---
 var node_AddElement = function(msg)		// Use the given message to add an element for everyone
 {
 	socket.emit('message', msg);
-	/*socket = io(`ws://${ip}:${port}`);
-	socket.on('connect', function (data) { 		
-		socket.emit('message', msg);
-		console.log("after emit: " + msg);
-	})*/
 }
 
 
@@ -139,28 +127,34 @@ var onPopupCategoryClick = function()		{ changeCategory(CollaborativeElementEnum
 
 const ip = 'localhost';
 const port = 3000;
+
+var localUser;
 var socket;
 $(function(){
-	var onlineUsers = [],userName = '',userColor = '0xFFFFDDDD';
+	var onlineUsers = [];
 	
 
 	//login
 	$("#login").on("click",function(){
-		$('#login_div').hide()
-		socket = io(`ws://${ip}:${port}`);
+		$('#login_div').hide();
+		socket = io(`ws://${ip}:${port}`);	
+	
 		
 		// Setup socket callbacks
 
-		socket.on('connect', function (data) {              
-			userName = $('#user_name').val();
-			userColor = $('#user_color').val();
+		socket.on('connect', function (data) {			
+			let userName = $('#user_name').val();
+			let userColor = $('#user_color').val();
+			localUser = new cUser(userName, userColor);
+
 			var tmp = {'name':userName, 'color':userColor};
 			socket.emit('new user', tmp);
 			$('#div').show();
 			$('#main').show();
+			map.invalidateSize();
 		});
 
-		socket.on("online users",function(data){
+		socket.on("online users", function(data){
 			/*
 			console.log("get online users: " + data);
 			if(data.length > onlineUsers.length){
@@ -206,8 +200,8 @@ $(function(){
 	// On map release, called even when panning
 	$("#map").click(function(e){
 		// Whatever the message is, we add the username and color to it
-		msg.name = userName;
-		msg.color = userColor;
+		msg.name = localUser.GetUserName();
+		msg.color = localUser.GetUserColor();
 		console.log("socket emit update map: " + msg.type + " " + (msg.type == MessageEnum.Add ? msg.cat : ""));
 		switch(msg.type) {
 			case MessageEnum.Add:
