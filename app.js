@@ -27,12 +27,22 @@ io.on('connection', function(socket){
 	// ====<<<<==== User Connection ====>>>>>====
 
 	socket.on('newUser', (user)=>{
-		// add only when new user not in users (never logged before)
-		if(!(user.name in users)){
-			users[user.name] = socket;
-			onlineUsers.push(user);
-			console.log("New user connected: " + user.name);
+
+		if(user.name in users)	// this username is already used
+		{
+			let i = 0;
+			while (`${user.name}.${i}` in users)
+			{
+				i++;
+			}
+			user.name = `${user.name}.${i}`;
+			socket.emit('nameChanged', user.name);
 		}
+			
+		users[user.name] = socket;
+		onlineUsers.push(user);
+		console.log("New user connected: " + user.name);
+		
 		io.emit('online users', onlineUsers);
 		socket.emit('initMap', mapOps);
 		socket.broadcast.emit('userJoined', user.name);

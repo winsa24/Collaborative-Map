@@ -49,6 +49,7 @@ var mapOnPan = function()
   console.log("Panned on: " + map.getCenter().toString());
   msg = {'user': localUser, 'type': MessageEnum.Pan};	
 }
+// map.panTo(pos, zoom);
 
 
 // =========== Element Addition ==============
@@ -150,25 +151,12 @@ $(function(){
 			$('#div_OnlineUsers').show();
 			$('#main').show();
 			map.invalidateSize();
-
-			showAlert(`Connected as ${userName} !`, AlertColor.Connected);
+		});
+		socket.on('nameChanged', function(newName) {
+			localUser.name = newName;
 		});
 
 		socket.on("online users", function(users){
-			/*
-			console.log("get online users: " + data);
-			if(data.length > onlineUsers.length){
-				console.log(data.at(-1));
-				$('#message_status').append(`<li><b>${data.at(-1).name}</b>&nbsp;<b>${data.at(-1).color}</b>&nbsp;enter&nbsp;${new Date().toLocaleTimeString()}</li>`);
-			}
-			var onlineUsersNames = data.map((item)=>{
-				return item.name;
-			})
-			$('#online').html(onlineUsersNames.join(','));
-			onlineUsers = data;
-			console.log("update online user number: "+onlineUsers.length);
-			*/
-
 			var ul = document.getElementById("list_OnlineUsers");
 			while( ul.firstChild ){
 				ul.removeChild( ul.firstChild );
@@ -199,6 +187,7 @@ $(function(){
 			ops.forEach(data => {
 				addElement(data.cat, data.lat, data.lng, !!data.shiftKey);
 			})
+			showAlert(`Connected as ${localUser.name} !`, AlertColor.Connected);
 		})
 
 		socket.on('AddOnMap', function (data) {
