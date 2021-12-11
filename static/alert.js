@@ -5,7 +5,9 @@ const AlertColor = {
   Other: '#3C4043'
 };
 
-var showPopup = function(text, color)
+var alertTimeOut;
+
+var showAlert = function(text, color)
 {
 	var alertTxt = document.getElementById("alert_text");
 	alertTxt.textContent = text;
@@ -13,9 +15,14 @@ var showPopup = function(text, color)
 	var alert = document.getElementById("alert");
 	alert.style.background = color;
 	alert.style.display = "block";
+
+	if(typeof alertTimeOut !== 'undefined')
+		clearTimeout(alertTimeOut);
+
+	alertTimeOut = setTimeout(closeAlert, 2000);
 }
 
-var closePopup = function()
+var closeAlert = function()
 {
 	var alert = document.getElementById("alert");
 	alert.style.display = "none";

@@ -42,45 +42,45 @@ var mapOnClick = function(e)	// locally check what the user is doing : he is pic
 	// TODO : try to select an element to edit it...
 
 	// no element found : add one	
-	msg = {'type': MessageEnum.Add, 'lat': e.latlng.lat, 'lng': e.latlng.lng, 'shiftDown': e.shiftKey, 'cat': currentCategory};	// set the message using the coords that will be used by the sockets
+	msg = {'user': localUser, 'type': MessageEnum.Add, 'lat': e.latlng.lat, 'lng': e.latlng.lng, 'shiftDown': e.shiftKey, 'cat': currentCategory};	// set the message using the coords that will be used by the sockets
 }
 var mapOnPan = function()
 {
   console.log("Panned on: " + map.getCenter().toString());
-  msg = {'type': MessageEnum.Pan};	
+  msg = {'user': localUser, 'type': MessageEnum.Pan};	
 }
 
 
 // =========== Element Addition ==============
 // TODO: add color
-var addElement = function(category, lat, lng, shiftDown)	// Add an element locally called by event callbacks
+var addElement = function(user, category, lat, lng, shiftDown)	// Add an element locally called by event callbacks
 {
 	switch(category) {
 		case CollaborativeElementEnum.Marker:
-			addMarker(lat,lng);
+			addMarker(user, lat,lng);
 			break;
 		case CollaborativeElementEnum.Circle:
-			addCircle(lat,lng);
+			addCircle(user, lat,lng);
 			break;
 		case CollaborativeElementEnum.Polygon:
-			addPolygon(lat,lng, shiftDown);
+			addPolygon(user, lat,lng, shiftDown);
 			break;
 		case CollaborativeElementEnum.Popup:
-			addPopup(lat,lng);
+			addPopup(user, lat,lng);
 			break;
 	}
 }
 
-var addMarker  = function(lat, lng)
+var addMarker  = function(user, lat, lng)
 {
-	var marker = new cMarker(localUser, [lat, lng]);
+	var marker = new cMarker(user, [lat, lng]);
 }
-var addCircle  = function(lat, lng)
+var addCircle  = function(user, lat, lng)
 {
-	var circle = new cCircle(localUser, [lat, lng], 500);
+	var circle = new cCircle(user, [lat, lng], 500);
 }
 //var polyPositions = [];
-var addPolygon  = function(lat, lng, shiftDown)
+var addPolygon  = function(user, lat, lng, shiftDown)
 {
 	/*if (polyPositions.length > 2)
 	{
@@ -96,14 +96,15 @@ var addPolygon  = function(lat, lng, shiftDown)
 	else
 		polyPositions.push([lat,lng]);*/
 }
-var addPopup  = function(lat, lng)
+var addPopup  = function(user, lat, lng)
 {
 	//var circle = new cCircle(localUser, [lat, lng], 500);
 }
 // ---
 var node_AddElement = function(msg)		// Use the given message to add an element for everyone
 {
-	socket.emit('message', msg);
+	console.log("E: emit addElement");
+	socket.emit('addElement', msg);
 }
 
 
@@ -131,9 +132,6 @@ const port = 3000;
 var localUser;
 var socket;
 $(function(){
-	var onlineUsers = [];
-	
-
 	//login
 	$("#login").on("click",function(){
 		$('#login_div').hide();
@@ -148,15 +146,15 @@ $(function(){
 			localUser = new cUser(userName, userColor);
 
 			var tmp = {'name':userName, 'color':userColor};
-			socket.emit('new user', tmp);
-			$('#div').show();
+			socket.emit('newUser', tmp);	// litterally the localUser cUser but app doesn't know cUser
+			$('#div_OnlineUsers').show();
 			$('#main').show();
 			map.invalidateSize();
 
-			showPopup(`Connected as ${userName} !`, AlertColor.Connected);
+			showAlert(`Connected as ${userName} !`, AlertColor.Connected);
 		});
 
-		socket.on("online users", function(data){
+		socket.on("online users", function(users){
 			/*
 			console.log("get online users: " + data);
 			if(data.length > onlineUsers.length){
@@ -170,42 +168,49 @@ $(function(){
 			onlineUsers = data;
 			console.log("update online user number: "+onlineUsers.length);
 			*/
+
+			var ul = document.getElementById("list_OnlineUsers");
+			while( ul.firstChild ){
+				ul.removeChild( ul.firstChild );
+			}
+
+			for (let user of users)
+			{
+				var listItem = document.createElement("li");
+				listItem.textContent = user.name;
+				listItem.style.backgroundColor = user.color
+
+				ul.appendChild(listItem);
+				console.log("Online: Added " + user.name);
+			}
 		});
 
-		socket.on('user disconnected', function(name){
-			//$('#message_status').append(`<li><b>${name.slice(-1)[0]}</b>&nbsp;quite&nbsp;${new Date().toLocaleTimeString()}</li>`);
-			showPopup(`${name.slice(-1)[0]} has left.`, AlertColor.Leaving);
+		socket.on('userJoined', function(name){
+			showAlert(`${name} joined !`, AlertColor.Joining);
+		})
+		socket.on('userDisconnected', function(name){
+			showAlert(`${name} has left.`, AlertColor.Leaving);
 		})
 
 		
-		socket.on('initial map', function(ops){		// Add on map every already added element
+
+		socket.on('initMap', function(ops){		// Init the map by adding every already added element
+			console.log("Initialising map...");
 			ops.forEach(data => {
-				//mapOnClick(data.lat, data.lng, !!data.shiftKey);		
-				//TODO: mapOnClick(data.lat, data.lng, !!data.shiftKey, data.cat, data.name, data.color);
-				console.log("Called for data: " + data.toString());
-				console.log("Added " + data.cat);
 				addElement(data.cat, data.lat, data.lng, !!data.shiftKey);
 			})
 		})
 
-		socket.on('update map', function (data) {
-			// let $message_list = $('#message_list');
-			// $message_list.append(`<li><span><span class='name'>${data.name}&nbsp;<small>${data.cat}</small></span></span></li>`);
-
-			console.log("Update Map: " + data.cat);
-			addElement(data.cat, data.lat, data.lng, !!data.shiftKey);
+		socket.on('AddOnMap', function (data) {
+			console.log("Add on Map: " + data.cat);
+			addElement(data.user, data.cat, data.lat, data.lng, !!data.shiftKey);
 		});
-
 	});
 
 	
 
 	// On map release, called even when panning
 	$("#map").click(function(e){
-		// Whatever the message is, we add the username and color to it
-		msg.name = localUser.GetUserName();
-		msg.color = localUser.GetUserColor();
-		console.log("socket emit update map: " + msg.type + " " + (msg.type == MessageEnum.Add ? msg.cat : ""));
 		switch(msg.type) {
 			case MessageEnum.Add:
 			{

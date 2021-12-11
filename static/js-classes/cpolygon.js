@@ -4,8 +4,8 @@ class cPolygon extends cElement
 	{
 		super(user);
         this.polygon = L.polygon(positions, {
-			color: user.GetUserColor(),		// It has the color of its original user
-			fillColor: user.GetUserColor(),	//				''
+			color: user.color,		// It has the color of its original user
+			fillColor: user.color,	//				''
 			fillOpacity: 0.5
 		}).addTo(map);
 	}

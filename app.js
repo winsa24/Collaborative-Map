@@ -1,3 +1,4 @@
+const { Console } = require('console');
 const express = require('express');
 const app = express();
 const http = require('http').Server(app);
@@ -15,51 +16,58 @@ app.get('/', function(req, res){
 app.use("/static", express.static('./static/'));
 
 
-let users = {};//store all users{name1,name2,name3}
-// single user format
-//  var client = {
-//   socket:socket,
-//   name:false,
-//   color:getColor()
-// }
-let onlineUsers = [];//store all online users[{name:, color:, socket:,}...]
-var mapOps = []; //user operations 
+let users = {};			//store all sockets, linked to their user.name (as a key)
+let onlineUsers = [];	//store all online users[{name:, color:}...]
+var mapOps = []; 		//user operations messages
 
 io.on('connection', function(socket){
-	console.log("User Connected" + socket.id);
+	console.log("User Connecting...");
 
-	socket.on('message',(msg)=>{
-		mapOps.push(msg);
-		console.log("receive msg: [" + msg.name + ", " + msg.type + ", [" + msg.lat + "," + msg.lng + "], " + msg.cat + "]");
-		io.emit('update map', msg);	
-		// socket.broadcast.emit(...) eveyry one but socket
-	});
 
-	socket.on('new user',(data)=>{
+	// ====<<<<==== User Connection ====>>>>>====
+
+	socket.on('newUser', (user)=>{
 		// add only when new user not in users (never logged before)
-		if(!(data.name in users)){
-			users[data.name] = socket;
-			onlineUsers.push(data);
+		if(!(user.name in users)){
+			users[user.name] = socket;
+			onlineUsers.push(user);
+			console.log("New user connected: " + user.name);
 		}
 		io.emit('online users', onlineUsers);
-		socket.emit('initial map', mapOps);
-	});
-	
+		socket.emit('initMap', mapOps);
+		socket.broadcast.emit('userJoined', user.name);
+	});	
 	
 	socket.on('disconnect',()=>{
 		let logoutUserName;
-		for(let obj in users){
+
+		for(let obj in users){			// loop through the user sockets to get the username linked to socket
 			if(users[obj]==socket){
 				logoutUserName = obj;
 				delete users[obj];
+				break;
 			}
 		}
+
 		for(let i in onlineUsers){
-			if(onlineUsers[i]==logoutUserName){
+			if(onlineUsers[i].name == logoutUserName){
 				onlineUsers.splice(i,1);
+				break;
 			}
 		}
-		io.emit('online users',onlineUsers);
-		io.emit('user disconnected',logoutUserName);
+
+		io.emit('online users', onlineUsers);
+		io.emit('userDisconnected',logoutUserName);
+		console.log(logoutUserName + " left at " + new Date().toLocaleTimeString());
 	})
+
+
+
+	// ====<<<<==== User Editing Map ====>>>>>====
+	
+	socket.on('addElement',(msg)=>{
+		mapOps.push(msg);
+		console.log(`Add: \t{${msg.cat}, [${msg.lat}, ${msg.lng}] }"`);
+		io.emit('AddOnMap', msg);
+	});
 })

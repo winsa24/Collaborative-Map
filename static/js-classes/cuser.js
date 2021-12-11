@@ -1,17 +1,8 @@
 class cUser 	// c_ollaborative_User
 {
-	constructor(name, color)
+	constructor(name, color, socket)
 	{
 		this.name = name;
 		this.color = color;
-	}
-
-	GetUserName()
-	{
-		return this.name;
-	}
-	GetUserColor()
-	{
-		return this.color;
 	}
 }

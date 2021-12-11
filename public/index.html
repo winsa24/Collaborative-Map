@@ -65,18 +65,35 @@
 		<!-- login-->
 		<div id='login_div'>
 		Username：	<input id="user_name" type="text"><button type="button" id="login">Login</button>
-					<input id="user_color" type="color" value="#228c4e" >
+					<input id="user_color" type="color" value="#228c4e">
 		</div>
-		<div id="div"  style="display:none">
+
+
+
+		<!-- map-->
+
+		<div id="div_OnlineUsers"  style="display:none">
 			<p>online user：<span id='online'></span></p>
-			<!-- <p>Activities：</p>
-			<ul id="message_list"></ul> -->
-			<ul id='message_status'></ul>
+			<ul id="list_OnlineUsers">
+
+
+			</ul>
+		</div>		
+		
+		<div id="main" style="display:none">
+			<div id="map"></div>
+			<div id="toolbars">
+				<button id="markers"	onclick="onMarkerCategoryClick()">add markers</button>
+				<button id="circles"	onclick="onCircleCategoryClick()">add circles</button>
+				<button id="polygons"	onclick="onPolygonCategoryClick()">add polygons</button>
+				<button id="popups"		onclick="onPopupCategoryClick()">add popups</button>
+			</div>
 		</div>
+
 
 
 		<div id="alert">
-			<span id="alert_closebtn" onclick="closePopup()">&times;</span>
+			<span id="alert_closebtn" onclick="closeAlert()">&times;</span>
 			<label id="alert_text">is an alert box.</label>
 
 			<style>
@@ -106,16 +123,6 @@
 					color: black;
 				}
 			</style>
-		</div>
-		
-		<div id="main" style="display:none">
-			<div id="map"></div>
-			<div id="toolbars">
-				<button id="markers"	onclick="onMarkerCategoryClick()">add markers</button>
-				<button id="circles"	onclick="onCircleCategoryClick()">add circles</button>
-				<button id="polygons"	onclick="onPolygonCategoryClick()">add polygons</button>
-				<button id="popups"		onclick="onPopupCategoryClick()">add popups</button>
-			</div>
 		</div>
 
 		<!-- Class Import -->		
