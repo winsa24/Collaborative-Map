@@ -15,6 +15,7 @@ const CollaborativeElementEnum = {
 var map;
 let msg;
 var currentCategory = CollaborativeElementEnum.Marker;
+var onlineUserViews = {};
 
 var createViz = function (){
 	map = L.map('map').setView([51.505, -0.09], 13);
@@ -46,13 +47,27 @@ var mapOnClick = function(e)	// locally check what the user is doing : he is pic
 }
 var mapOnPan = function()
 {
-	console.log("Panned on: " + map.getCenter().toString());
-	msg = {'user': localUser, 'type': MessageEnum.Pan};	
+	msg = {'type': MessageEnum.Pan,};	// block the map update emision because we are paning
+
+	node_MapOnPan();
+}
+var node_MapOnPan = function()
+{	
+	let b = map.getBounds();
+
+	var sw = b.getSouthWest();
+	var ne = b.getNorthEast();
+	let bounds = { 'sw_lat': sw.lat,'sw_lng': sw.lng,'ne_lat': ne.lat,'ne_lng': ne.lng };	// latlngbound isn't recognized by app, so put it in regular object of which we know the attributes name
+	
+	console.log(`${bounds.sw_lat},${bounds.sw_lng} ; ${bounds.ne_lat},${bounds.ne_lng}`);
+	socket.emit('userPaned', localUser.name, bounds);
 }
 // map.panTo(pos, zoom);
-var snapToUserView = function(user)
+var snapToUserView = function(username)
 {
-	console.log(user.name + " | " + user.color);
+	if (username == localUser.name)
+		return;
+	map.panInsideBounds(onlineUserViews[username].getBounds());
 }
 
 
@@ -172,17 +187,21 @@ $(function(){
 			document.getElementById("mapNameTxt").textContent = newMapName;
 		});
 
-		socket.on("online users", function(users){
+		socket.on("online users", function(users, userViews){
+			for (let us in onlineUserViews)
+			{
+				onlineUserViews[us].removeRect();
+				delete onlineUserViews[us];
+			}
+			
 			var ul = document.getElementById("list_OnlineUsers");
 			while( ul.firstChild ){
 				ul.removeChild( ul.firstChild );
 			}
 
 			for (let user of users)
-			{
+			{				
 				var listItem = document.createElement("li");
-				//listItem.textContent = user.name;
-				//listItem.style.backgroundColor = user.color
 
 				var button = document.createElement('button');
 				button.type = 'button';
@@ -190,15 +209,27 @@ $(function(){
 				button.style.backgroundColor = user.color
 				button.className = 'userBtn';
 			
-				//button.onclick = (user) => { snapToUserView(user); };
-				button.onclick = snapToUserView.bind(button, user);
+				button.onclick = snapToUserView.bind(button, user.name);
 				listItem.appendChild(button);
 
 				ul.appendChild(listItem);
 				console.log("Online: Added " + user.name);
+
+				if (user.name != localUser.name)
+				{
+					let cUsV = new cUserView(user.color, userViews[user.name]);
+					onlineUserViews[user.name] = cUsV;
+				}
 			}
 		});
 
+		socket.on('otherUserPaned', function(username, bound)
+		{
+			for (let name in onlineUserViews)
+				console.log(name);
+
+			onlineUserViews[username].change(bound);
+		});
 		socket.on('userJoined', function(name){
 			showAlert(`${name} joined !`, AlertColor.Joining);
 		});
@@ -215,6 +246,7 @@ $(function(){
 				addElement(data.user, data.cat, data.lat, data.lng, !!data.shiftKey);
 			})
 			showAlert(`Connected as ${localUser.name} !`, AlertColor.Connected);
+			node_MapOnPan();
 		});
 
 		socket.on('AddOnMap', function (data) {
@@ -246,12 +278,11 @@ $(function(){
 			}
 			case MessageEnum.Select:
 			{
-			
 				break;
 			}
 			case MessageEnum.Pan:
 			{
-			
+				//node_MapOnPan();			
 				break;
 			}
 		}

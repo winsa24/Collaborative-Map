@@ -18,9 +18,10 @@ app.use("/static", express.static('./static/'));
 
 let mapName = "Collaborative Map";
 let defaultView = {'pos': [51.505, -0.09], 'zoom':13};
-let users = {};			//store all sockets, linked to their user.name (as a key)
-let onlineUsers = [];	//store all online users[{name:, color:}...]
-var mapOps = []; 		//user operations messages
+let users = {};				//store all sockets, linked to their user.name (as a key)
+let onlineUsers = [];		//store all online users[{name:, color:}...]
+let onlineUsersView = {};	//store all view bounds, linked to their user.name (as a key, like sockets in users)
+var mapOps = []; 			//user operations messages
 
 io.on('connection', function(socket){
 	console.log("User Connecting...");
@@ -54,13 +55,19 @@ io.on('connection', function(socket){
 		}
 			
 		users[user.name] = socket;
+		onlineUsersView[user.name] = {'sw_lat': 0,'sw_lng': 0,'ne_lat': 0,'ne_lng': 0};
 		onlineUsers.push(user);
 		console.log("New user connected: " + user.name);
 		
-		io.emit('online users', onlineUsers);
+		io.emit('online users', onlineUsers, onlineUsersView);
 		socket.emit('initMap', mapOps, mapName, defaultView);
 		socket.broadcast.emit('userJoined', user.name);
 	});	
+
+	socket.on('userPaned', (username, bounds) => {
+		onlineUsersView[username] = bounds;
+		socket.broadcast.emit("otherUserPaned", username, bounds);
+	});
 	
 	socket.on('disconnect',()=>{
 		let logoutUserName;
@@ -69,6 +76,7 @@ io.on('connection', function(socket){
 			if(users[obj]==socket){
 				logoutUserName = obj;
 				delete users[obj];
+				delete onlineUsersView[obj];
 				break;
 			}
 		}
