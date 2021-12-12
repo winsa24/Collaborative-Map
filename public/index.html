@@ -25,46 +25,31 @@
 				height: 680px;
 			}
 
-			li{
+			#list_OnlineUsers{				
 				list-style: none;
-				margin-bottom: 10px;
+				display: flex;
+				flex-direction: row;
+				padding: 10px;
 			}
-			#message_list li{
-				height:40px;
-				clear: both;
-			}
-			li span.name{
-				max-width: 300px;
-				padding:10px 20px;
-				background:#af1;
-				border-radius: 5px;
-			}
-			li i{
-				margin:0 10px;
-				display: inline-block;
-				font-style: normal;
-				width:40px;height:40px;
-				text-align: center;
-				line-height: 40px;
+			.userBtn{
+				border: none;
+  				color: white;
 				border-radius: 50%;
-				border:1px solid #af1;
+				height: 70px;
+				width: 70px;
+				margin-right: 2px;
 			}
-			#message_list{
-				padding:20px;
-				max-width: 600px;
-				min-height:300px;
-				border:1px solid #ccc;
+			.userBtn:hover {
+				border: 2px black solid;
 			}
-			.rt{
-				float: right;
-			}
+
 		</style>
 	</head>
 
 	<body onload="createViz()">
 		<!-- login-->
 		<div id='login_div'>
-		Username：	<input id="user_name" type="text"><button type="button" id="login">Login</button>
+		Username:	<input id="user_name" type="text"><button type="button" id="login">Login</button>
 					<input id="user_color" type="color" value="#228c4e">
 		</div>
 
@@ -73,7 +58,7 @@
 		<!-- map-->
 
 		<div id="div_OnlineUsers"  style="display:none">
-			<p>online user：<span id='online'></span></p>
+			<p>Online Users: <span id='online'></span></p>
 			<ul id="list_OnlineUsers">
 
 
@@ -106,8 +91,7 @@
 					padding: 10px;
 					background-color: #464646;
 					color: white;
-					margin-top: 5px;
-					margin-bottom: 5px;
+					margin: 5px;
 				}
 				#alert_closebtn {
 					margin-left: 15px;

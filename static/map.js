@@ -46,10 +46,14 @@ var mapOnClick = function(e)	// locally check what the user is doing : he is pic
 }
 var mapOnPan = function()
 {
-  console.log("Panned on: " + map.getCenter().toString());
-  msg = {'user': localUser, 'type': MessageEnum.Pan};	
+	console.log("Panned on: " + map.getCenter().toString());
+	msg = {'user': localUser, 'type': MessageEnum.Pan};	
 }
 // map.panTo(pos, zoom);
+var snapToUserView = function(user)
+{
+	console.log(user.name + " | " + user.color);
+}
 
 
 // =========== Element Addition ==============
@@ -135,6 +139,14 @@ var socket;
 $(function(){
 	//login
 	$("#login").on("click",function(){
+			
+		let name = $('#user_name').val();
+		if (name === "")
+		{
+			$("#user_name").css("background-color","#F0544B");
+			return;
+		}
+
 		$('#login_div').hide();
 		socket = io(`ws://${ip}:${port}`);	
 	
@@ -165,8 +177,18 @@ $(function(){
 			for (let user of users)
 			{
 				var listItem = document.createElement("li");
-				listItem.textContent = user.name;
-				listItem.style.backgroundColor = user.color
+				//listItem.textContent = user.name;
+				//listItem.style.backgroundColor = user.color
+
+				var button = document.createElement('button');
+				button.type = 'button';
+				button.innerHTML = user.name;
+				button.style.backgroundColor = user.color
+				button.className = 'userBtn';
+			
+				//button.onclick = (user) => { snapToUserView(user); };
+				button.onclick = snapToUserView.bind(button, user);
+				listItem.appendChild(button);
 
 				ul.appendChild(listItem);
 				console.log("Online: Added " + user.name);
@@ -185,7 +207,7 @@ $(function(){
 		socket.on('initMap', function(ops){		// Init the map by adding every already added element
 			console.log("Initialising map...");
 			ops.forEach(data => {
-				addElement(data.cat, data.lat, data.lng, !!data.shiftKey);
+				addElement(data.user, data.cat, data.lat, data.lng, !!data.shiftKey);
 			})
 			showAlert(`Connected as ${localUser.name} !`, AlertColor.Connected);
 		})
