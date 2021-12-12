@@ -1,11 +1,24 @@
 class cMarker extends cElement
 {
-	constructor(user, position)
+	constructor(data)
 	{
-		super(user);
+		super(data.user, data.pos);
+		this.text = "";
+		this.marker;
+		this.setupMarker();
+	}
+	getData()
+	{
+		var data = super.getData();
+		data.cat = CollaborativeElementEnum.Marker;
+		return data;
+	}
 
+
+	createIcon()
+	{
 		const markerHtmlStyles = `
-		background-color: ${user.color};
+		background-color: ${super.getColor()};
 		width: 2rem;
 		height: 2rem;
 		display: block;
@@ -24,10 +37,36 @@ class cMarker extends cElement
 		html: `<span style="${markerHtmlStyles}" />`
 		})
 
-		this.marker = L.marker(position, {icon: colorIcon}).addTo(map);
+		return colorIcon;
 	}
-	RemoveElementFromMap()
+	setupMarker()
 	{
-		super.RemoveElementFromMap();
+		this.marker = L.marker(super.getPosition(), {icon: this.createIcon(), title: this.text, clickable: true}).addTo(map);
+		this.marker.on("click", (e) => {onMarkerSelection(this);});
+	}
+
+
+
+	removeMarker()
+	{
+		this.marker.remove();
+	}
+	deleteMarker(socket)
+	{
+		let msg = {'user': localUser, 'type': MessageEnum.Remove, 'cat': CollaborativeElementEnum.Marker, 'pos':this.position};
+		socket.emit("deleteElement", msg);
+		this.remove();
+	}
+
+	lock()
+	{
+		super.lock = true;
+		this.marker.icon = this.createIcon();
+	}
+	changeUser(newUser)
+	{
+		super.changeUser(newUser);
+		removeMarker();
+		setupMarker();
 	}
 }

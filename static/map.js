@@ -1,5 +1,6 @@
 const MessageEnum = {
   Add: 'Add',
+  Remove: 'Remove',
   Select: 'Select',
   Pan: 'Pan',
   Zoom: 'Zoom'
@@ -7,15 +8,16 @@ const MessageEnum = {
 const CollaborativeElementEnum = {
   Marker: 'Marker',
   Circle: 'Circle',
-  Polygon: 'Polygon',
-  Popup: 'Popup'
 };
 
 
 var map;
-let msg;
 var currentCategory = CollaborativeElementEnum.Marker;
 var onlineUserViews = {};
+
+var markers = [];
+var circles = [];
+
 
 var createViz = function (){
 	map = L.map('map').setView([51.505, -0.09], 13);
@@ -36,19 +38,13 @@ var createViz = function (){
 
 var mapOnClick = function(e)	// locally check what the user is doing : he is picking an element (selection) or adding an element (add)
 {
-	let lat = e.latlng.lat
-	let lng = e.latlng.lng
-	console.log("Clicked on: [" + lat + "," +lng + "]");	
+	let data = {'user': localUser, 'pos': e.latlng, 'lock': false, 'cat': currentCategory};
+	// depending on currentCategory, add additional fields (raidus, title...)
 	
-	// TODO : try to select an element to edit it...
-
-	// no element found : add one	
-	msg = {'user': localUser, 'type': MessageEnum.Add, 'lat': e.latlng.lat, 'lng': e.latlng.lng, 'shiftDown': e.shiftKey, 'cat': currentCategory};	// set the message using the coords that will be used by the sockets
+	node_AddElement(data);
 }
 var mapOnPan = function()
 {
-	msg = {'type': MessageEnum.Pan,};	// block the map update emision because we are paning
-
 	node_MapOnPan();
 }
 var node_MapOnPan = function()
@@ -59,7 +55,6 @@ var node_MapOnPan = function()
 	var ne = b.getNorthEast();
 	let bounds = { 'sw_lat': sw.lat,'sw_lng': sw.lng,'ne_lat': ne.lat,'ne_lng': ne.lng };	// latlngbound isn't recognized by app, so put it in regular object of which we know the attributes name
 	
-	console.log(`${bounds.sw_lat},${bounds.sw_lng} ; ${bounds.ne_lat},${bounds.ne_lng}`);
 	socket.emit('userPaned', localUser.name, bounds);
 }
 // map.panTo(pos, zoom);
@@ -72,53 +67,28 @@ var snapToUserView = function(username)
 
 
 // =========== Element Addition ==============
-// TODO: add color
-var addElement = function(user, category, lat, lng, shiftDown)	// Add an element locally called by event callbacks
+
+var addElement = function(data)				// Add an element locally called by event callbacks
 {
-	switch(category) {
+	switch(data.cat) {
 		case CollaborativeElementEnum.Marker:
-			addMarker(user, lat,lng);
+			addMarker(data);
 			break;
 		case CollaborativeElementEnum.Circle:
-			addCircle(user, lat,lng);
-			break;
-		case CollaborativeElementEnum.Polygon:
-			addPolygon(user, lat,lng, shiftDown);
-			break;
-		case CollaborativeElementEnum.Popup:
-			addPopup(user, lat,lng);
+			addCircle(data);
 			break;
 	}
 }
 
-var addMarker  = function(user, lat, lng)
+var addMarker  = function(data)
 {
-	var marker = new cMarker(user, [lat, lng]);
+	var marker = new cMarker(data);
+	markers.push(marker);
 }
-var addCircle  = function(user, lat, lng)
+var addCircle  = function(data)
 {
-	var circle = new cCircle(user, [lat, lng], 500);
-}
-//var polyPositions = [];
-var addPolygon  = function(user, lat, lng, shiftDown)
-{
-	/*if (polyPositions.length > 2)
-	{
-		console.log(shiftDown);
-		if (shiftDown)
-			polyPositions.push([lat,lng]);
-		else
-		{
-			var polygon = new cPolygon(localUser, polyPositions);
-			polyPositions = [];
-		}
-	}
-	else
-		polyPositions.push([lat,lng]);*/
-}
-var addPopup  = function(user, lat, lng)
-{
-	//var circle = new cCircle(localUser, [lat, lng], 500);
+	var circle = new cCircle(data);
+	circles.push(circle);
 }
 // ---
 var node_AddElement = function(msg)		// Use the given message to add an element for everyone
@@ -126,6 +96,29 @@ var node_AddElement = function(msg)		// Use the given message to add an element 
 	console.log("E: emit addElement");
 	socket.emit('addElement', msg);
 }
+
+
+
+
+// =========== Element Selection ==============
+
+var onMarkerSelection = function(markerSelected)	// marker has been clicked, ask the server if we can select it (already locked or not ?)
+{
+	if (markerSelected.lock)
+		return; // we know that the marker is locked, no need to ask to the server
+
+	let lockMsg = markerSelected.getData();
+	console.log("lock: ");
+	console.log(lockMsg);
+	socket.emit("lock", lockMsg);
+}
+var selectMaker = function()	// After a onMarkerSelection call, if available we get a signal that we select the marker (the other users will get a signal too but different)	
+{
+
+}
+
+
+
 
 
 // ========= Toolbar's OnClicks ==============
@@ -183,7 +176,7 @@ $(function(){
 			localUser.name = newName;
 		});
 		socket.on('mapNameChange', function(newMapName) {
-			console.log("Change name : " + newMapName);
+			console.log("R: Change name : " + newMapName);
 			document.getElementById("mapNameTxt").textContent = newMapName;
 		});
 
@@ -238,20 +231,23 @@ $(function(){
 		});
 
 
-		socket.on('initMap', function(ops, mapName, view){		// Init the map by adding every already added element
-			console.log("Initialising map...");
+
+		socket.on('initMap', function(elems, mapName, view){		// Init the map by adding every already added element
+			console.log("R: Initialising map...");
 			document.getElementById("mapNameTxt").textContent = mapName;
 			map.setView(view.pos, view.zoom);
-			ops.forEach(data => {
-				addElement(data.user, data.cat, data.lat, data.lng, !!data.shiftKey);
+
+			elems.forEach(data => {
+				addElement(data);
 			})
+
 			showAlert(`Connected as ${localUser.name} !`, AlertColor.Connected);
 			node_MapOnPan();
 		});
 
 		socket.on('AddOnMap', function (data) {
-			console.log("Add on Map: " + data.cat);
-			addElement(data.user, data.cat, data.lat, data.lng, !!data.shiftKey);
+			console.log("R: Add on Map: " + data.cat);
+			addElement(data);
 		});
 	});
 
@@ -259,32 +255,10 @@ $(function(){
 
 	$("#mapNameBtn").click(function(e){
 		var text = $('#mapNameInput').val();
-		console.log("Set name : " + text);
 		socket.emit('setMapName', text);
 	});
 	$("#defViewBtn").click(function(e){
 		let curView = {'pos': map.getCenter(), 'zoom': map.getZoom()};
 		socket.emit('setDafaultView', curView);
-	});
-
-
-	// On map release, called even when panning
-	$("#map").click(function(e){
-		switch(msg.type) {
-			case MessageEnum.Add:
-			{
-				node_AddElement(msg);
-				break;
-			}
-			case MessageEnum.Select:
-			{
-				break;
-			}
-			case MessageEnum.Pan:
-			{
-				//node_MapOnPan();			
-				break;
-			}
-		}
 	});
 });

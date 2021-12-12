@@ -1,26 +1,28 @@
 class cElement 	// c_ollaborative_Element
 {
-	constructor(user)
+	constructor(user, position)
 	{
-		this.lastUser = user;
+		this.user = user;
+		this.position = position;
+		this.lock = false;
 	}
-	RemoveElementFromMap()
+	changeUser(newUser)
 	{
-		// do nothing for now, maybe add js node stuff later
-		// mainly used to be derivated to remove the element of the ap
+		this.user = newUser;
 	}
-
-	SetLastUser(newUser)
+	getColor()
 	{
-		// we local isn't the new user
-		// -> Popup to tell that the last user has changed
-			// Replace if already existing
-			// Else add only if local was the last user
-		this.lastUser = newUser;
-		// Or change element color
+		if(this.lock)
+			return "#C1C1C1";
+		else
+			return this.user.color;
 	}
-	GetLastUser()
+	getPosition()
 	{
-		return this.lastUser;
+		return this.position;
+	}
+	getData()
+	{
+		return {'user': this.user, 'pos': this.position, 'lock': this.lock};
 	}
 }

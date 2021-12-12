@@ -1,13 +1,14 @@
 class cCircle extends cElement
 {
-	constructor(user, position, radius)
+	constructor(data)
 	{
-		super(user);
-		this.circle = L.circle(position, {
-			color: user.color,
-			fillColor: user.color,
+		super(data.user, data.pos);
+		this.radius = 500
+		this.circle = L.circle(super.getPosition(), {
+			color: super.getColor(),
+			fillColor: super.getColor(),
 			fillOpacity: 0.5,
-			radius: radius
+			radius: this.radius
 		}).addTo(map);
 	}
 }

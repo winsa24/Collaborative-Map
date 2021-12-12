@@ -21,7 +21,8 @@ let defaultView = {'pos': [51.505, -0.09], 'zoom':13};
 let users = {};				//store all sockets, linked to their user.name (as a key)
 let onlineUsers = [];		//store all online users[{name:, color:}...]
 let onlineUsersView = {};	//store all view bounds, linked to their user.name (as a key, like sockets in users)
-var mapOps = []; 			//user operations messages
+//var mapOps = []; 			//user operations messages
+var mapElem = [];			//map elements
 
 io.on('connection', function(socket){
 	console.log("User Connecting...");
@@ -60,7 +61,7 @@ io.on('connection', function(socket){
 		console.log("New user connected: " + user.name);
 		
 		io.emit('online users', onlineUsers, onlineUsersView);
-		socket.emit('initMap', mapOps, mapName, defaultView);
+		socket.emit('initMap', mapElem, mapName, defaultView);
 		socket.broadcast.emit('userJoined', user.name);
 	});	
 
@@ -97,9 +98,24 @@ io.on('connection', function(socket){
 
 	// ====<<<<==== User Editing Map ====>>>>>====
 	
-	socket.on('addElement',(msg)=>{
-		mapOps.push(msg);
-		console.log(`Add: \t{${msg.cat}, [${msg.lat}, ${msg.lng}] }"`);
-		io.emit('AddOnMap', msg);
+	socket.on('addElement',(data)=>{
+		mapElem.push(data);
+		io.emit('AddOnMap', data);
 	});
+
+	socket.on('lock', (data) => {
+		let index = -1;
+		console.log("data: ");
+		console.log(data);
+		for (let i in mapElem)
+		{
+			console.log(mapElem[i]);
+			if (!mapElem[i].lock && (data.cat == mapElem[i].cat) && (data.pos.lat == mapElem[i].pos.lat) && (data.pos.lng == mapElem[i].pos.lng))
+			{
+				index = i;
+				break;
+			}
+		}
+		console.log("Lock : " + index);
+	})
 })
