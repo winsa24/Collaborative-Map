@@ -143,7 +143,7 @@ var node_select = function(elementSelected)	// marker has been clicked, ask the 
 	if (index < 0)
 		return;
 
-	socket.emit("lock", index);
+	socket.emit("lock", index, localUser.name);
 }
 var select = function(i)	// After a onMarkerSelection call, if available we get a signal that we select the marker (the other users will get a signal too but different)	
 {

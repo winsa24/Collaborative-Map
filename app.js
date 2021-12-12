@@ -21,6 +21,7 @@ let defaultView = {'pos': [51.505, -0.09], 'zoom':13};
 let users = {};				//store all sockets, linked to their user.name (as a key)
 let onlineUsers = [];		//store all online users[{name:, color:}...]
 let onlineUsersView = {};	//store all view bounds, linked to their user.name (as a key, like sockets in users)
+let onlineUsersSelectItem = {};	//store all locked/selected item indexes, linked to their user.name (as a key, like sockets in users)
 //var mapOps = []; 			//user operations messages
 var mapElem = [];			//map elements
 
@@ -89,6 +90,17 @@ io.on('connection', function(socket){
 			}
 		}
 
+		// if was locking an element, unlock it
+		console.log(`disconnecting, ${logoutUserName} has lock ?`);
+		console.log(onlineUsersSelectItem);
+		if (logoutUserName in onlineUsersSelectItem)
+		{
+			mapElem[onlineUsersSelectItem[logoutUserName]].lock = false;
+			io.emit('UpdateElement', onlineUsersSelectItem[logoutUserName], mapElem[onlineUsersSelectItem[logoutUserName]]);
+			delete onlineUsersSelectItem[logoutUserName];
+		}
+		
+
 		io.emit('online users', onlineUsers);
 		io.emit('userDisconnected',logoutUserName);
 		console.log(logoutUserName + " left at " + new Date().toLocaleTimeString());
@@ -103,12 +115,13 @@ io.on('connection', function(socket){
 		io.emit('AddOnMap', data);
 	});
 
-	socket.on('lock', (index) => {
-		if (mapElem[index].lock)
+	socket.on('lock', (index, username) => {
+		if (mapElem[index].lock || username in onlineUsersSelectItem)
 			return;
 
 		console.log(`Locking element: ${index}`);
 		mapElem[index].lock = true;
+		onlineUsersSelectItem[username] = index;
 
 		socket.broadcast.emit('UpdateElement', index, mapElem[index]);
 		socket.emit("SelectElement", index);
@@ -118,8 +131,11 @@ io.on('connection', function(socket){
 		if (index < 0)
 			return;
 
-		if (!mapElem[index].lock || (data.cat != mapElem[index].cat))
+		if (!(editorUser.name in onlineUsersSelectItem) || onlineUsersSelectItem[editorUser.name] != index)
 			return;
+
+		//if (!mapElem[index].lock || (data.cat != mapElem[index].cat))	// additional useless checks
+		//	return;
 
 		console.log(`Unlocking element: ${index}`);
 		if (hasChanged)
@@ -131,6 +147,7 @@ io.on('connection', function(socket){
 			mapElem[index] = data;
 		}
 		mapElem[index].lock = false;
+		delete onlineUsersSelectItem[editorUser.name];
 
 		socket.emit("UnSelectElement");
 		io.emit('UpdateElement', index, mapElem[index]);
@@ -150,6 +167,8 @@ io.on('connection', function(socket){
 			users[mapElem[index].user.name].emit('userDeletedYourWork', editorUser.name);
 
 		mapElem.splice(index,1);
+		delete onlineUsersSelectItem[editorUser.name];
+
 		socket.emit("UnSelectElement");
 		io.emit('DeleteElement', index);
 	});
