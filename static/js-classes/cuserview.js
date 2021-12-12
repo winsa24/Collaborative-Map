@@ -12,7 +12,6 @@ class cUserView 	// c_ollaborative_UserView_point
 	}
 	setupRect(bound)
 	{
-		console.log(bound);
 		this.sw_lat = bound.sw_lat;
 		this.sw_lng = bound.sw_lng;
 		this.ne_lat = bound.ne_lat;

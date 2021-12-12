@@ -82,10 +82,19 @@
 		<div id="main" style="display:none">
 			<div id="map"></div>
 			<div id="toolbars">
-				<button id="markers"	onclick="onMarkerCategoryClick()">add markers</button>
-				<button id="circles"	onclick="onCircleCategoryClick()">add circles</button>
-				<button id="polygons"	onclick="onPolygonCategoryClick()">add polygons</button>
-				<button id="popups"		onclick="onPopupCategoryClick()">add popups</button>
+				<div>
+					<button id="markers"	onclick="onMarkerCategoryClick()">Add Marker</button>
+					<button id="circles"	onclick="onCircleCategoryClick()">Add Circle</button>
+				</div>
+				<div id="editTools" style="display:none">
+					<span id ="markerEdit" style="display:none">
+						<input id="input_markerTitle" type="text"><button type="button" id="btn_markerTitle" onclick="onMarkerTitleEditClick()">Set Title</button>
+					</span>
+					<span id ="circleEdit" style="display:none">
+						<input id="input_circleRadius" type="range" min="5" max="1000" value="500" class="slider" oninput="onCircleCategoryChange()">
+					</span>
+					<button id="delete"	style="background-color: #fd7b70;"	onclick="onDeleteButtonClick()">Delete Selected</button>
+				</div>
 			</div>
 		</div>
 

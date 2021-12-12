@@ -16,7 +16,8 @@ var currentCategory = CollaborativeElementEnum.Marker;
 var onlineUserViews = {};
 
 var elements = [];
-var selectedElement = null;
+var selectedElementIndex = null;
+var hasChanged = true;
 
 
 var createViz = function (){
@@ -38,14 +39,17 @@ var createViz = function (){
 
 var mapOnClick = function(e)	// locally check what the user is doing : he is picking an element (selection) or adding an element (add)
 {
-	if (selectedElement != null)
+	if (selectedElementIndex != null)
 	{
 		node_unselect();
 	}
 	else
 	{
 		let data = {'user': localUser, 'pos': e.latlng, 'lock': false, 'cat': currentCategory};
-		// depending on currentCategory, add additional fields (raidus, title...)
+		if (currentCategory == CollaborativeElementEnum.Marker)
+			data.title = "";
+		else if (currentCategory == CollaborativeElementEnum.Circle)
+			data.radius = 500;
 		
 		node_AddElement(data);
 	}
@@ -108,39 +112,75 @@ var node_AddElement = function(msg)		// Use the given message to add an element 
 
 // =========== Element Selection ==============
 
-var node_select = function(markerSelected)	// marker has been clicked, ask the server if we can select it (already locked or not ?)
+var node_select = function(elementSelected)	// marker has been clicked, ask the server if we can select it (already locked or not ?)
 {
-	if (markerSelected.lock)
+	console.log("Try Select");
+
+	if (elementSelected.lock)
 		return; // we know that the marker is locked, no need to ask to the server
 
-	if(selectedElement != null)
+	if(selectedElementIndex != null)
 	{
-		if (selectedElement == markerSelected)
+		if (elements[selectedElementIndex] == elementSelected)
 			return;
 		else
 			node_unselect();
 	}
 
-	let clickedData = markerSelected.getData();
-	socket.emit("lock", clickedData);
+	// Check can select it according to local env (then the server will do another check) and get the index if so
+	let index = -1;
+	let data = elementSelected.getData();
+	for (let i in elements)
+	{
+		let i_data = elements[i].getData();
+		if ((data.cat == i_data.cat) && (data.pos == i_data.pos))
+		{
+			if (!elements[i].lock)
+				index = i;
+			break;	// found it, locked or not
+		}
+	}		
+	if (index < 0)
+		return;
+
+	socket.emit("lock", index);
 }
 var select = function(i)	// After a onMarkerSelection call, if available we get a signal that we select the marker (the other users will get a signal too but different)	
 {
-	selectedElement = elements[i];
-	selectedElement.select();
+	selectedElementIndex = i;
+	hasChanged = false;
+
+	switch(elements[i].cat) {
+		case CollaborativeElementEnum.Marker:
+			document.getElementById("input_markerTitle").value = elements[i].title;
+			$('#markerEdit').show();
+			break;
+		case CollaborativeElementEnum.Circle:
+			document.getElementById("input_circleRadius").value = elements[i].radius;
+			$('#circleEdit').show();
+			break;
+	}
+
+	$('#editTools').show();
+	elements[i].select();
 }
 
 var node_unselect = function()
 {
-	if (selectedElement == null)
+	if (selectedElementIndex == null)
 		return;
 
-	let selectedData = selectedElement.getData();
-	socket.emit("unlock", selectedData, localUser, false);
+	let selectedData = elements[selectedElementIndex].getData();
+	socket.emit("unlock", selectedElementIndex, selectedData, localUser, hasChanged);	
 }
 var unselect = function()
 {
-	selectedElement = null;
+	$('#editTools').hide();
+	$('#markerEdit').hide();
+	$('#circleEdit').hide();
+
+	selectedElementIndex = null;
+	hasChanged = null;	
 }
 
 
@@ -155,8 +195,32 @@ var changeCategory = function (category)
 }
 var onMarkerCategoryClick = function() 		{ changeCategory(CollaborativeElementEnum.Marker); }
 var onCircleCategoryClick = function() 		{ changeCategory(CollaborativeElementEnum.Circle); }
-var onPolygonCategoryClick = function() 	{ changeCategory(CollaborativeElementEnum.Polygon); }
-var onPopupCategoryClick = function()		{ changeCategory(CollaborativeElementEnum.Popup); }
+
+var onMarkerTitleEditClick = function() {
+	if (selectedElementIndex == null || elements[selectedElementIndex].cat != CollaborativeElementEnum.Marker)
+		return;
+
+	elements[selectedElementIndex].title = $("#input_markerTitle").val();;
+	elements[selectedElementIndex].updateMarker();
+	hasChanged = true;
+	console.log("Marker edited" + elements[selectedElementIndex].title);
+}
+var onCircleCategoryChange = function() {
+	if (selectedElementIndex == null || elements[selectedElementIndex].cat != CollaborativeElementEnum.Circle)
+		return;
+
+	elements[selectedElementIndex].radius = $("#input_circleRadius").val();;
+	elements[selectedElementIndex].updateCircle();
+	hasChanged = true;
+	console.log("Circle edited" + elements[selectedElementIndex].radius);
+}
+var onDeleteButtonClick = function() {
+	if (selectedElementIndex == null)
+		return;
+
+	console.log("trigger delete");
+	socket.emit('delete', selectedElementIndex, localUser, elements[selectedElementIndex].getData());
+}
 
 
 
@@ -254,6 +318,12 @@ $(function(){
 		socket.on('userDisconnected', function(name){
 			showAlert(`${name} has left.`, AlertColor.Leaving);
 		});
+		socket.on('userEditedYourWork', function(name){
+			showAlert(`${name} edited your element.`, AlertColor.Edited);
+		});
+		socket.on('userDeletedYourWork', function(name){
+			showAlert(`${name} deleted your element.`, AlertColor.Deleted);
+		});
 
 
 
@@ -262,6 +332,16 @@ $(function(){
 			document.getElementById("mapNameTxt").textContent = mapName;
 			map.setView(view.pos, view.zoom);
 
+			// Reset
+			selectedElementIndex = null;
+			hasChanged = true;
+			for (el of elements)
+			{
+				el.removeElem();
+			}
+			elements = [];
+
+			// Add Elements
 			elems.forEach(data => {
 				addElement(data);
 			})
@@ -285,6 +365,15 @@ $(function(){
 		})
 		socket.on('UnSelectElement', function() {
 			unselect();
+		})
+		socket.on('DeleteElement', function(i) {
+			console.log(elements.length);
+			elements[i].removeElem();
+			elements.splice(i,1);
+			console.log(elements.length);
+
+			if (selectedElementIndex != null && selectedElementIndex > i)	// move the selected index since we remove an element of the array before
+				selectedElementIndex--;
 		})
 	});
 

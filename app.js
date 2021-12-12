@@ -103,50 +103,54 @@ io.on('connection', function(socket){
 		io.emit('AddOnMap', data);
 	});
 
-	socket.on('lock', (data) => {
-		let index = -1;
-		for (let i in mapElem)
-		{
-			if (!mapElem[i].lock && (data.cat == mapElem[i].cat) && (data.pos.lat == mapElem[i].pos.lat) && (data.pos.lng == mapElem[i].pos.lng))
-			{
-				index = i;
-				break;
-			}
-		}
-		
-		if (index < 0)
+	socket.on('lock', (index) => {
+		if (mapElem[index].lock)
 			return;
 
-		console.log(`Locking element: ${index} for ${data.user.name}`);
+		console.log(`Locking element: ${index}`);
 		mapElem[index].lock = true;
 
 		socket.broadcast.emit('UpdateElement', index, mapElem[index]);
 		socket.emit("SelectElement", index);
 	});
 
-	socket.on('unlock', (data, user, hasChanged) => {
-		let index = -1;
-		for (let i in mapElem)
-		{
-			if (mapElem[i].lock && (data.cat == mapElem[i].cat) && (data.pos.lat == mapElem[i].pos.lat) && (data.pos.lng == mapElem[i].pos.lng))
-			{
-				index = i;
-				break;
-			}
-		}
-		
+	socket.on('unlock', (index, data, editorUser, hasChanged) => {		
 		if (index < 0)
 			return;
 
-		console.log(`Unlocking element: ${index} from ${user.name}`);
+		if (!mapElem[index].lock || (data.cat != mapElem[index].cat))
+			return;
+
+		console.log(`Unlocking element: ${index}`);
 		if (hasChanged)
 		{
-			//
+			if (mapElem[index].user.name != editorUser.name)
+				users[mapElem[index].user.name].emit('userEditedYourWork', editorUser.name);
+
+			data.user = editorUser;
+			mapElem[index] = data;
 		}
 		mapElem[index].lock = false;
-		mapElem[index].user = user;
 
 		socket.emit("UnSelectElement");
 		io.emit('UpdateElement', index, mapElem[index]);
+	});
+
+	socket.on('delete', (index, editorUser, data) => {
+		console.log("trigger delete");
+		if (index < 0)
+			return;
+
+		if (!mapElem[index].lock || (data.cat != mapElem[index].cat))
+			return;
+
+		console.log(`Deleting element: ${index}`);
+
+		if (mapElem[index].user.name != editorUser.name)
+			users[mapElem[index].user.name].emit('userDeletedYourWork', editorUser.name);
+
+		mapElem.splice(index,1);
+		socket.emit("UnSelectElement");
+		io.emit('DeleteElement', index);
 	});
 })

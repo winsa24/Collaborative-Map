@@ -5,6 +5,7 @@ class cElement 	// c_ollaborative_Element
 		this.user = data.user;
 		this.position = data.pos;
 		this.lock = data.lock;
+		this.cat = data.cat;
 	}
 	changeUser(newUser)
 	{

@@ -4,7 +4,7 @@ class cMarker extends cElement
 	constructor(data)
 	{
 		super(data);
-		this.text = "";
+		this.title = data.title;
 		this.marker;
 		this.setupMarker();
 	}
@@ -12,7 +12,7 @@ class cMarker extends cElement
 	{
 		var data = super.getData();
 		data.cat = CollaborativeElementEnum.Marker;
-		data.text = this.text;
+		data.title = this.title;
 		return data;
 	}
 
@@ -43,17 +43,8 @@ class cMarker extends cElement
 	}
 	setupMarker()
 	{
-		this.marker = L.marker(super.getPosition(), {icon: this.createIcon(), title: this.text, clickable: true}).addTo(map);
+		this.marker = L.marker(super.getPosition(), {icon: this.createIcon(), title: this.title, clickable: true}).addTo(map);
 		this.marker.on("click", (e) => {node_select(this);});
-	}
-	removeMarker()
-	{
-		this.marker.remove();
-	}
-	updateMarker()
-	{
-		this.removeMarker();
-		this.setupMarker();
 	}
 
 
@@ -61,18 +52,20 @@ class cMarker extends cElement
 	update(data)
 	{
 		super.update(data.user, data.pos, data.lock);
-		this.text = data.text;
+		this.title = data.title;
 		this.updateMarker();
 	}
-	deleteMarker(socket)
+	removeElem()
 	{
-		let msg = {'user': localUser, 'type': MessageEnum.Remove, 'cat': CollaborativeElementEnum.Marker, 'pos':this.position};
-		socket.emit("deleteElement", msg);
-		this.remove();
+		this.marker.remove();
+	}
+	updateMarker()
+	{
+		this.removeElem();
+		this.setupMarker();
 	}
 	select()
 	{
-		super.changeUser(localUser);
-		this.updateMarker();
+		this.marker.bindPopup("Selected").openPopup();
 	}
 }

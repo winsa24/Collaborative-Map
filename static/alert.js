@@ -2,7 +2,8 @@ const AlertColor = {
   Connected: '#2FB986',
   Joining: '#47A8F5',
   Leaving: '#F66359',
-  Other: '#3C4043'
+  Edited: '#3C4043',
+  Deleted: '#F2D163'
 };
 
 var alertTimeOut;
