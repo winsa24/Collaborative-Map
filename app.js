@@ -105,17 +105,48 @@ io.on('connection', function(socket){
 
 	socket.on('lock', (data) => {
 		let index = -1;
-		console.log("data: ");
-		console.log(data);
 		for (let i in mapElem)
 		{
-			console.log(mapElem[i]);
 			if (!mapElem[i].lock && (data.cat == mapElem[i].cat) && (data.pos.lat == mapElem[i].pos.lat) && (data.pos.lng == mapElem[i].pos.lng))
 			{
 				index = i;
 				break;
 			}
 		}
-		console.log("Lock : " + index);
-	})
+		
+		if (index < 0)
+			return;
+
+		console.log(`Locking element: ${index} for ${data.user.name}`);
+		mapElem[index].lock = true;
+
+		socket.broadcast.emit('UpdateElement', index, mapElem[index]);
+		socket.emit("SelectElement", index);
+	});
+
+	socket.on('unlock', (data, user, hasChanged) => {
+		let index = -1;
+		for (let i in mapElem)
+		{
+			if (mapElem[i].lock && (data.cat == mapElem[i].cat) && (data.pos.lat == mapElem[i].pos.lat) && (data.pos.lng == mapElem[i].pos.lng))
+			{
+				index = i;
+				break;
+			}
+		}
+		
+		if (index < 0)
+			return;
+
+		console.log(`Unlocking element: ${index} from ${user.name}`);
+		if (hasChanged)
+		{
+			//
+		}
+		mapElem[index].lock = false;
+		mapElem[index].user = user;
+
+		socket.emit("UnSelectElement");
+		io.emit('UpdateElement', index, mapElem[index]);
+	});
 })

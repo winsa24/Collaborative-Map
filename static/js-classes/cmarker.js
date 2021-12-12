@@ -1,8 +1,9 @@
 class cMarker extends cElement
 {
+	// Constructor & Extractor
 	constructor(data)
 	{
-		super(data.user, data.pos);
+		super(data);
 		this.text = "";
 		this.marker;
 		this.setupMarker();
@@ -11,10 +12,11 @@ class cMarker extends cElement
 	{
 		var data = super.getData();
 		data.cat = CollaborativeElementEnum.Marker;
+		data.text = this.text;
 		return data;
 	}
 
-
+	// methods that shouldn't be used outside of this class
 	createIcon()
 	{
 		const markerHtmlStyles = `
@@ -42,14 +44,25 @@ class cMarker extends cElement
 	setupMarker()
 	{
 		this.marker = L.marker(super.getPosition(), {icon: this.createIcon(), title: this.text, clickable: true}).addTo(map);
-		this.marker.on("click", (e) => {onMarkerSelection(this);});
+		this.marker.on("click", (e) => {node_select(this);});
 	}
-
-
-
 	removeMarker()
 	{
 		this.marker.remove();
+	}
+	updateMarker()
+	{
+		this.removeMarker();
+		this.setupMarker();
+	}
+
+
+	// Edit methods
+	update(data)
+	{
+		super.update(data.user, data.pos, data.lock);
+		this.text = data.text;
+		this.updateMarker();
 	}
 	deleteMarker(socket)
 	{
@@ -57,16 +70,9 @@ class cMarker extends cElement
 		socket.emit("deleteElement", msg);
 		this.remove();
 	}
-
-	lock()
+	select()
 	{
-		super.lock = true;
-		this.marker.icon = this.createIcon();
-	}
-	changeUser(newUser)
-	{
-		super.changeUser(newUser);
-		removeMarker();
-		setupMarker();
+		super.changeUser(localUser);
+		this.updateMarker();
 	}
 }

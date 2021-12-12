@@ -1,10 +1,10 @@
 class cElement 	// c_ollaborative_Element
 {
-	constructor(user, position)
+	constructor(data)
 	{
-		this.user = user;
-		this.position = position;
-		this.lock = false;
+		this.user = data.user;
+		this.position = data.pos;
+		this.lock = data.lock;
 	}
 	changeUser(newUser)
 	{
@@ -24,5 +24,12 @@ class cElement 	// c_ollaborative_Element
 	getData()
 	{
 		return {'user': this.user, 'pos': this.position, 'lock': this.lock};
+	}
+
+	update(user, position, lock)
+	{
+		this.user = user;
+		this.position = position;
+		this.lock = lock;
 	}
 }

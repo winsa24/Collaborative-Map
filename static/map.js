@@ -15,8 +15,8 @@ var map;
 var currentCategory = CollaborativeElementEnum.Marker;
 var onlineUserViews = {};
 
-var markers = [];
-var circles = [];
+var elements = [];
+var selectedElement = null;
 
 
 var createViz = function (){
@@ -38,10 +38,17 @@ var createViz = function (){
 
 var mapOnClick = function(e)	// locally check what the user is doing : he is picking an element (selection) or adding an element (add)
 {
-	let data = {'user': localUser, 'pos': e.latlng, 'lock': false, 'cat': currentCategory};
-	// depending on currentCategory, add additional fields (raidus, title...)
-	
-	node_AddElement(data);
+	if (selectedElement != null)
+	{
+		node_unselect();
+	}
+	else
+	{
+		let data = {'user': localUser, 'pos': e.latlng, 'lock': false, 'cat': currentCategory};
+		// depending on currentCategory, add additional fields (raidus, title...)
+		
+		node_AddElement(data);
+	}
 }
 var mapOnPan = function()
 {
@@ -57,7 +64,6 @@ var node_MapOnPan = function()
 	
 	socket.emit('userPaned', localUser.name, bounds);
 }
-// map.panTo(pos, zoom);
 var snapToUserView = function(username)
 {
 	if (username == localUser.name)
@@ -83,12 +89,12 @@ var addElement = function(data)				// Add an element locally called by event cal
 var addMarker  = function(data)
 {
 	var marker = new cMarker(data);
-	markers.push(marker);
+	elements.push(marker);
 }
 var addCircle  = function(data)
 {
 	var circle = new cCircle(data);
-	circles.push(circle);
+	elements.push(circle);
 }
 // ---
 var node_AddElement = function(msg)		// Use the given message to add an element for everyone
@@ -102,19 +108,39 @@ var node_AddElement = function(msg)		// Use the given message to add an element 
 
 // =========== Element Selection ==============
 
-var onMarkerSelection = function(markerSelected)	// marker has been clicked, ask the server if we can select it (already locked or not ?)
+var node_select = function(markerSelected)	// marker has been clicked, ask the server if we can select it (already locked or not ?)
 {
 	if (markerSelected.lock)
 		return; // we know that the marker is locked, no need to ask to the server
 
-	let lockMsg = markerSelected.getData();
-	console.log("lock: ");
-	console.log(lockMsg);
-	socket.emit("lock", lockMsg);
-}
-var selectMaker = function()	// After a onMarkerSelection call, if available we get a signal that we select the marker (the other users will get a signal too but different)	
-{
+	if(selectedElement != null)
+	{
+		if (selectedElement == markerSelected)
+			return;
+		else
+			node_unselect();
+	}
 
+	let clickedData = markerSelected.getData();
+	socket.emit("lock", clickedData);
+}
+var select = function(i)	// After a onMarkerSelection call, if available we get a signal that we select the marker (the other users will get a signal too but different)	
+{
+	selectedElement = elements[i];
+	selectedElement.select();
+}
+
+var node_unselect = function()
+{
+	if (selectedElement == null)
+		return;
+
+	let selectedData = selectedElement.getData();
+	socket.emit("unlock", selectedData, localUser, false);
+}
+var unselect = function()
+{
+	selectedElement = null;
 }
 
 
@@ -181,15 +207,14 @@ $(function(){
 		});
 
 		socket.on("online users", function(users, userViews){
+			var ul = document.getElementById("list_OnlineUsers");
+			while( ul.firstChild ){
+				ul.removeChild( ul.firstChild );
+			}
 			for (let us in onlineUserViews)
 			{
 				onlineUserViews[us].removeRect();
 				delete onlineUserViews[us];
-			}
-			
-			var ul = document.getElementById("list_OnlineUsers");
-			while( ul.firstChild ){
-				ul.removeChild( ul.firstChild );
 			}
 
 			for (let user of users)
@@ -249,6 +274,18 @@ $(function(){
 			console.log("R: Add on Map: " + data.cat);
 			addElement(data);
 		});
+
+		socket.on('UpdateElement', function(i, data) {
+			console.log("R: Update element n°" + i);
+			elements[i].update(data);
+		})
+
+		socket.on('SelectElement', function(i) {
+			select(i);
+		})
+		socket.on('UnSelectElement', function() {
+			unselect();
+		})
 	});
 
 	

@@ -2,7 +2,7 @@ class cCircle extends cElement
 {
 	constructor(data)
 	{
-		super(data.user, data.pos);
+		super(data);
 		this.radius = 500
 		this.circle = L.circle(super.getPosition(), {
 			color: super.getColor(),
