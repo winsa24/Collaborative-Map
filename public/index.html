@@ -21,6 +21,12 @@
 		<script src="http://localhost:3000/socket.io/socket.io.js"></script>
 		
 		<style>
+			#mapNameTxt {
+				margin-right: 30px;
+				font-size: 24pt;
+				font-weight: bold;
+			}
+
 			#map {
 				height: 680px;
 			}
@@ -29,7 +35,8 @@
 				list-style: none;
 				display: flex;
 				flex-direction: row;
-				padding: 10px;
+				padding: 5px;
+				margin-left: 5px;
 			}
 			.userBtn{
 				border: none;
@@ -58,7 +65,14 @@
 		<!-- map-->
 
 		<div id="div_OnlineUsers"  style="display:none">
-			<p>Online Users: <span id='online'></span></p>
+			<span>
+				<Label id="mapNameTxt"></Label>
+				<span>
+					<input id="mapNameInput" type="text"><button type="button" id="mapNameBtn">Change Name</button>
+					<button type="button" id="defViewBtn">Set View As Default</button>
+				</span>
+			</span>
+			
 			<ul id="list_OnlineUsers">
 
 

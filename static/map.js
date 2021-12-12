@@ -167,6 +167,10 @@ $(function(){
 		socket.on('nameChanged', function(newName) {
 			localUser.name = newName;
 		});
+		socket.on('mapNameChange', function(newMapName) {
+			console.log("Change name : " + newMapName);
+			document.getElementById("mapNameTxt").textContent = newMapName;
+		});
 
 		socket.on("online users", function(users){
 			var ul = document.getElementById("list_OnlineUsers");
@@ -197,20 +201,21 @@ $(function(){
 
 		socket.on('userJoined', function(name){
 			showAlert(`${name} joined !`, AlertColor.Joining);
-		})
+		});
 		socket.on('userDisconnected', function(name){
 			showAlert(`${name} has left.`, AlertColor.Leaving);
-		})
+		});
 
-		
 
-		socket.on('initMap', function(ops){		// Init the map by adding every already added element
+		socket.on('initMap', function(ops, mapName, view){		// Init the map by adding every already added element
 			console.log("Initialising map...");
+			document.getElementById("mapNameTxt").textContent = mapName;
+			map.setView(view.pos, view.zoom);
 			ops.forEach(data => {
 				addElement(data.user, data.cat, data.lat, data.lng, !!data.shiftKey);
 			})
 			showAlert(`Connected as ${localUser.name} !`, AlertColor.Connected);
-		})
+		});
 
 		socket.on('AddOnMap', function (data) {
 			console.log("Add on Map: " + data.cat);
@@ -219,6 +224,17 @@ $(function(){
 	});
 
 	
+
+	$("#mapNameBtn").click(function(e){
+		var text = $('#mapNameInput').val();
+		console.log("Set name : " + text);
+		socket.emit('setMapName', text);
+	});
+	$("#defViewBtn").click(function(e){
+		let curView = {'pos': map.getCenter(), 'zoom': map.getZoom()};
+		socket.emit('setDafaultView', curView);
+	});
+
 
 	// On map release, called even when panning
 	$("#map").click(function(e){

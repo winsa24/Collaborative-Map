@@ -16,12 +16,26 @@ app.get('/', function(req, res){
 app.use("/static", express.static('./static/'));
 
 
+let mapName = "Collaborative Map";
+let defaultView = {'pos': [51.505, -0.09], 'zoom':13};
 let users = {};			//store all sockets, linked to their user.name (as a key)
 let onlineUsers = [];	//store all online users[{name:, color:}...]
 var mapOps = []; 		//user operations messages
 
 io.on('connection', function(socket){
 	console.log("User Connecting...");
+
+
+	// ====<<<<==== Default Server Properties ====>>>>>====
+
+	socket.on('setMapName', (name)=>{
+		mapName = name;
+		io.emit('mapNameChange', mapName);
+	});	
+	socket.on('setDafaultView', (view)=>{
+		defaultView.pos = view.pos;
+		defaultView.zoom = view.zoom;
+	});	
 
 
 	// ====<<<<==== User Connection ====>>>>>====
@@ -44,7 +58,7 @@ io.on('connection', function(socket){
 		console.log("New user connected: " + user.name);
 		
 		io.emit('online users', onlineUsers);
-		socket.emit('initMap', mapOps);
+		socket.emit('initMap', mapOps, mapName, defaultView);
 		socket.broadcast.emit('userJoined', user.name);
 	});	
 	
