@@ -49,7 +49,7 @@ class cCircle extends cElement
 	{
 		super.update(data.user, data.pos, data.lock);
 		this.radius = data.radius;
-		this.updateCircle();
+		this.updateVisual();
 	}
 	removeElem()
 	{

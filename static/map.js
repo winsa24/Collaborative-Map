@@ -254,6 +254,10 @@ var onCircleCategoryChange = function() {
 	elements[selectedElementIndex].updateVisual(true);
 	hasChanged = true;
 }
+var onAbortButtonClick = function() {
+	hasChanged = false;
+	node_unselect();
+}
 var onDeleteButtonClick = function() {
 	if (selectedElementIndex == null)
 		return;

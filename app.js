@@ -152,7 +152,7 @@ io.on('connection', function(socket){
 		console.log(`Unlocking element: ${index}`);
 		if (hasChanged)
 		{
-			if (mapElem[index].user.name != editorUser.name)
+			if (mapElem[index].user.name != editorUser.name && (mapElem[index].user.name in users))
 				users[mapElem[index].user.name].emit('userEditedYourWork', editorUser, mapElem[index].pos);
 
 			data.user = editorUser;
@@ -174,7 +174,7 @@ io.on('connection', function(socket){
 
 		console.log(`Deleting element: ${index}`);
 
-		if (mapElem[index].user.name != editorUser.name)
+		if (mapElem[index].user.name != editorUser.name && (mapElem[index].user.name in users))
 			users[mapElem[index].user.name].emit('userDeletedYourWork', editorUser, mapElem[index].pos);
 
 
