@@ -344,6 +344,10 @@ $(function(){
 					let cUsV = new cUserView(user.color, userViews[user.name]);
 					onlineUserViews[user.name] = cUsV;
 				}
+				else
+				{
+					button.style.borderRadius = "25%";
+				}
 			}
 		});
 
