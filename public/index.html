@@ -40,6 +40,7 @@
 			}
 			.userBtn{
 				border: none;
+    			outline: none;
   				color: white;
 				border-radius: 50%;
 				height: 70px;
@@ -82,17 +83,24 @@
 		<div id="main" style="display:none">
 			<div id="map"></div>
 			<div id="toolbars">
-				<div>
-					<button id="markers"	onclick="onMarkerCategoryClick()">Add Marker</button>
-					<button id="circles"	onclick="onCircleCategoryClick()">Add Circle</button>
+				<div style="margin-top:5px;margin-bottom:5px">
+					<button onclick="onMarkerCategoryClick()">Add Marker</button>
+					<button onclick="onCircleCategoryClick()">Add Circle</button>
+					<button onclick="onFocusCategoryClick()">Request Focus</button>
 				</div>
 				<div id="editTools" style="display:none">
-					<span id ="markerEdit" style="display:none">
+					<div>
+						<input id="input_lat" type="number" min="-90" max="90" step="any">
+						<input id="input_lng" type="number" min="-180" max="180" step="any">
+						<button type="button" id="btn_setPos" onclick="onPosEditClick()">Set Position</button>
+					</div>
+					<div id ="markerEdit" style="display:none">
 						<input id="input_markerTitle" type="text"><button type="button" id="btn_markerTitle" onclick="onMarkerTitleEditClick()">Set Title</button>
-					</span>
-					<span id ="circleEdit" style="display:none">
+					</div>
+					<div id ="circleEdit" style="display:none">
 						<input id="input_circleRadius" type="range" min="5" max="1000" value="500" class="slider" oninput="onCircleCategoryChange()">
-					</span>
+						<label>Radius</label>
+					</div>
 					<button id="delete"	style="background-color: #fd7b70;"	onclick="onDeleteButtonClick()">Delete Selected</button>
 				</div>
 			</div>
@@ -102,7 +110,11 @@
 
 		<div id="alert">
 			<span id="alert_closebtn" onclick="closeAlert()">&times;</span>
-			<label id="alert_text">is an alert box.</label>
+			<span>
+				<button id="alert_panbtn"></button>
+				<label id="alert_text">is an alert box.</label>
+				<label id="alert_viewbtn" style="display:none">...</label>
+			</span>
 
 			<style>
 				/* The alert message box */
@@ -116,6 +128,7 @@
 					color: white;
 					margin: 5px;
 				}
+
 				#alert_closebtn {
 					margin-left: 15px;
 					color: white;
@@ -129,6 +142,30 @@
 				#alert_closebtn:hover {
 					color: black;
 				}
+
+				#alert_viewbtn {
+					margin-left: 22px;
+					color: rgb(97, 132, 247);
+					font-weight: bold;
+					float: right;
+					cursor: pointer;
+					transition: 0.3s;
+				}
+				#alert_viewbtn:hover {
+					color: black;
+				}
+
+				#alert_panbtn {
+					border: none;
+    				outline: none;
+					border-radius: 50%;
+					height: 15px;
+					width: 15px;
+					margin-right: 2px;
+				}
+				.alert_panbtn:hover {
+					border: 2px black solid;
+				}				
 			</style>
 		</div>
 

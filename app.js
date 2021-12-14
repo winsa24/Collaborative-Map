@@ -63,7 +63,7 @@ io.on('connection', function(socket){
 		
 		io.emit('online users', onlineUsers, onlineUsersView);
 		socket.emit('initMap', mapElem, mapName, defaultView);
-		socket.broadcast.emit('userJoined', user.name);
+		socket.broadcast.emit('userJoined', user);
 	});	
 
 	socket.on('userPaned', (username, bounds) => {
@@ -83,28 +83,40 @@ io.on('connection', function(socket){
 			}
 		}
 
+		let logoutUser;
 		for(let i in onlineUsers){
 			if(onlineUsers[i].name == logoutUserName){
+				logoutUser = onlineUsers[i];
 				onlineUsers.splice(i,1);
 				break;
 			}
 		}
 
 		// if was locking an element, unlock it
-		console.log(`disconnecting, ${logoutUserName} has lock ?`);
-		console.log(onlineUsersSelectItem);
 		if (logoutUserName in onlineUsersSelectItem)
 		{
-			mapElem[onlineUsersSelectItem[logoutUserName]].lock = false;
+			let lockedIndex = onlineUsersSelectItem[logoutUserName];
+			mapElem[lockedIndex].lock = false;
 			io.emit('UpdateElement', onlineUsersSelectItem[logoutUserName], mapElem[onlineUsersSelectItem[logoutUserName]]);
 			delete onlineUsersSelectItem[logoutUserName];
 		}
 		
 
-		io.emit('online users', onlineUsers);
-		io.emit('userDisconnected',logoutUserName);
+		io.emit('online users', onlineUsers, onlineUsersView);
+		io.emit('userDisconnected', logoutUser);
 		console.log(logoutUserName + " left at " + new Date().toLocaleTimeString());
 	})
+
+
+
+
+	// ====<<<<==== User Focus ====>>>>>====
+
+	socket.on('requestFocus',(user, pos)=>{
+		socket.broadcast.emit('userRequestFocus', user, pos);
+		socket.emit('requestFocusOk',pos);
+	});
+
 
 
 
@@ -141,7 +153,7 @@ io.on('connection', function(socket){
 		if (hasChanged)
 		{
 			if (mapElem[index].user.name != editorUser.name)
-				users[mapElem[index].user.name].emit('userEditedYourWork', editorUser.name);
+				users[mapElem[index].user.name].emit('userEditedYourWork', editorUser, mapElem[index].pos);
 
 			data.user = editorUser;
 			mapElem[index] = data;
@@ -154,7 +166,6 @@ io.on('connection', function(socket){
 	});
 
 	socket.on('delete', (index, editorUser, data) => {
-		console.log("trigger delete");
 		if (index < 0)
 			return;
 
@@ -164,10 +175,16 @@ io.on('connection', function(socket){
 		console.log(`Deleting element: ${index}`);
 
 		if (mapElem[index].user.name != editorUser.name)
-			users[mapElem[index].user.name].emit('userDeletedYourWork', editorUser.name);
+			users[mapElem[index].user.name].emit('userDeletedYourWork', editorUser, mapElem[index].pos);
+
 
 		mapElem.splice(index,1);
-		delete onlineUsersSelectItem[editorUser.name];
+		delete onlineUsersSelectItem[editorUser.name];			
+		for (let lockingUser in onlineUsersSelectItem)		// decrement the lock index of the other users
+		{
+			if (onlineUsersSelectItem[lockingUser] > index)
+				onlineUsersSelectItem[lockingUser]--;
+		}
 
 		socket.emit("UnSelectElement");
 		io.emit('DeleteElement', index);

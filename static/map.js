@@ -8,6 +8,7 @@ const MessageEnum = {
 const CollaborativeElementEnum = {
   Marker: 'Marker',
   Circle: 'Circle',
+  FocusPoint: 'FocusPoint'
 };
 
 
@@ -21,6 +22,8 @@ var hasChanged = true;
 
 
 var createViz = function (){
+	generateRandomUserColor();
+
 	map = L.map('map').setView([51.505, -0.09], 13);
 	L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
 		attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
@@ -34,6 +37,12 @@ var createViz = function (){
 	map.on('click', function(e){ mapOnClick(e); }); 
 	map.on('moveend', function(e){ mapOnPan(); });
 }
+var generateRandomUserColor = function()
+{
+	let colorPicker = document.getElementById("user_color");
+	const randomColor = Math.floor(Math.random()*16777215).toString(16);
+	colorPicker.value = "#" + randomColor;
+}
 
 // =========== Set Map On CallBacks ==============
 
@@ -42,6 +51,10 @@ var mapOnClick = function(e)	// locally check what the user is doing : he is pic
 	if (selectedElementIndex != null)
 	{
 		node_unselect();
+	}
+	else if (currentCategory == CollaborativeElementEnum.FocusPoint)
+	{
+		node_RequestFocus(e.latlng);
 	}
 	else
 	{
@@ -68,11 +81,17 @@ var node_MapOnPan = function()
 	
 	socket.emit('userPaned', localUser.name, bounds);
 }
-var snapToUserView = function(username)
+var snapToUserView = function(button)
 {
+	let username = button.id.substring(8); // id = 'userBtn_' + user.name
 	if (username == localUser.name)
 		return;
 	map.panInsideBounds(onlineUserViews[username].getBounds());
+}
+var node_RequestFocus = function(pos)
+{
+	console.log("E: request focus");
+	socket.emit("requestFocus", localUser, pos);
 }
 
 
@@ -150,6 +169,9 @@ var select = function(i)	// After a onMarkerSelection call, if available we get 
 	selectedElementIndex = i;
 	hasChanged = false;
 
+	elements[i].updateVisual(true);
+	document.getElementById("input_lat").value = elements[i].position.lat;
+	document.getElementById("input_lng").value = elements[i].position.lng;
 	switch(elements[i].cat) {
 		case CollaborativeElementEnum.Marker:
 			document.getElementById("input_markerTitle").value = elements[i].title;
@@ -179,10 +201,21 @@ var unselect = function()
 	$('#markerEdit').hide();
 	$('#circleEdit').hide();
 
+	elements[selectedElementIndex].updateVisual(false);
 	selectedElementIndex = null;
 	hasChanged = null;	
 }
+var elementMoving = function(pos)
+{
+	console.log("Dragged");
+	if (selectedElementIndex == null)
+		return;
 
+	elements[selectedElementIndex].position = pos;
+	document.getElementById("input_lat").value = elements[selectedElementIndex].position.lat;
+	document.getElementById("input_lng").value = elements[selectedElementIndex].position.lng;
+	hasChanged = true;
+}
 
 
 
@@ -195,24 +228,31 @@ var changeCategory = function (category)
 }
 var onMarkerCategoryClick = function() 		{ changeCategory(CollaborativeElementEnum.Marker); }
 var onCircleCategoryClick = function() 		{ changeCategory(CollaborativeElementEnum.Circle); }
+var onFocusCategoryClick = function() 		{ changeCategory(CollaborativeElementEnum.FocusPoint); }
 
+var onPosEditClick = function() {
+	if (selectedElementIndex == null)
+		return;
+
+	elements[selectedElementIndex].position = {'lat': $("#input_lat").val(), 'lng': $("#input_lng").val()};
+	elements[selectedElementIndex].updateVisual(true);
+	hasChanged = true;
+}
 var onMarkerTitleEditClick = function() {
 	if (selectedElementIndex == null || elements[selectedElementIndex].cat != CollaborativeElementEnum.Marker)
 		return;
 
 	elements[selectedElementIndex].title = $("#input_markerTitle").val();;
-	elements[selectedElementIndex].updateMarker();
+	elements[selectedElementIndex].updateVisual(true);
 	hasChanged = true;
-	console.log("Marker edited" + elements[selectedElementIndex].title);
 }
 var onCircleCategoryChange = function() {
 	if (selectedElementIndex == null || elements[selectedElementIndex].cat != CollaborativeElementEnum.Circle)
 		return;
 
 	elements[selectedElementIndex].radius = $("#input_circleRadius").val();;
-	elements[selectedElementIndex].updateCircle();
+	elements[selectedElementIndex].updateVisual(true);
 	hasChanged = true;
-	console.log("Circle edited" + elements[selectedElementIndex].radius);
 }
 var onDeleteButtonClick = function() {
 	if (selectedElementIndex == null)
@@ -281,6 +321,7 @@ $(function(){
 				delete onlineUserViews[us];
 			}
 
+			console.log(userViews);
 			for (let user of users)
 			{				
 				var listItem = document.createElement("li");
@@ -290,8 +331,9 @@ $(function(){
 				button.innerHTML = user.name;
 				button.style.backgroundColor = user.color
 				button.className = 'userBtn';
+				button.id = 'userBtn_' + user.name;
 			
-				button.onclick = snapToUserView.bind(button, user.name);
+				button.onclick = snapToUserView.bind(button, button);
 				listItem.appendChild(button);
 
 				ul.appendChild(listItem);
@@ -312,17 +354,23 @@ $(function(){
 
 			onlineUserViews[username].change(bound);
 		});
-		socket.on('userJoined', function(name){
-			showAlert(`${name} joined !`, AlertColor.Joining);
+		socket.on('userJoined', function(user){
+			showAlert(`${user.name} joined !`, AlertColor.Joining, user, 2);
 		});
-		socket.on('userDisconnected', function(name){
-			showAlert(`${name} has left.`, AlertColor.Leaving);
+		socket.on('userDisconnected', function(user){
+			showAlert(`${user.name} has left.`, AlertColor.Leaving, user, 2);
 		});
-		socket.on('userEditedYourWork', function(name){
-			showAlert(`${name} edited your element.`, AlertColor.Edited);
+		socket.on('userEditedYourWork', function(user, pos){
+			showAlert(`${user.name} edited your element.`, AlertColor.Edited, user, 3.5, pos);
 		});
-		socket.on('userDeletedYourWork', function(name){
-			showAlert(`${name} deleted your element.`, AlertColor.Deleted);
+		socket.on('userDeletedYourWork', function(user, pos){
+			showAlert(`${user.name} deleted your element.`, AlertColor.Deleted, user, 3.5, pos);
+		});
+		socket.on('userRequestFocus', function(user, pos){
+			showAlert(`${user.name} wants you to focus on ${pos}`, AlertColor.Focus, user, 6, pos);
+		});
+		socket.on('requestFocusOk', function(pos) {
+			L.popup().setLatLng(pos).setContent('Focus Requested Here').openOn(map);
 		});
 
 
@@ -346,7 +394,7 @@ $(function(){
 				addElement(data);
 			})
 
-			showAlert(`Connected as ${localUser.name} !`, AlertColor.Connected);
+			showAlert(`Connected as ${localUser.name} !`, AlertColor.Connected, localUser, 2);
 			node_MapOnPan();
 		});
 

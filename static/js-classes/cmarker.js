@@ -41,28 +41,38 @@ class cMarker extends cElement
 
 		return colorIcon;
 	}
-	setupMarker()
+	setupMarker(selected)
 	{
-		this.marker = L.marker(super.getPosition(), {icon: this.createIcon(), title: this.title, clickable: true}).addTo(map);
+		if (selected != null && selected)
+		{
+			console.log("Drag here");
+			this.marker = L.marker(super.getPosition(), {icon: this.createIcon(), title: this.title, clickable: true, draggable: true}).addTo(map);
+			this.marker.on("dragend", (e) => {elementMoving(e.target.getLatLng());});
+		}
+		else
+		{	
+			console.log("No Drag here");
+			this.marker = L.marker(super.getPosition(), {icon: this.createIcon(), title: this.title, clickable: true}).addTo(map);
+		}
 		this.marker.on("click", (e) => {node_select(this);});
 	}
 
 
-	// Edit methods
+	// Public Edit methods
 	update(data)
 	{
 		super.update(data.user, data.pos, data.lock);
 		this.title = data.title;
-		this.updateMarker();
+		this.updateVisual();
 	}
 	removeElem()
 	{
 		this.marker.remove();
 	}
-	updateMarker()
+	updateVisual(selected)
 	{
 		this.removeElem();
-		this.setupMarker();
+		this.setupMarker(selected);
 	}
 	select()
 	{

@@ -16,20 +16,35 @@ class cCircle extends cElement
 	}
 
 	// methods that shouldn't be used outside of this class
-	setupCircle()
+	setupCircle(selected)
 	{
-		this.circle = L.circle(super.getPosition(), {
-			color: super.getColor(),
-			fillColor: super.getColor(),
-			fillOpacity: 0.5,
-			radius: this.radius,
-			clickable: true
-		}).addTo(map);
+		if (selected != null && selected)
+		{
+			this.circle = L.circle(super.getPosition(), {
+				color: super.getColor(),
+				fillColor: super.getColor(),
+				fillOpacity: 0.5,
+				radius: this.radius,
+				clickable: true,
+				draggable: true
+			}).addTo(map);
+			this.circle.on("dragend", (e) => {elementMoving(e.target.getLatLng());});
+		}
+		else
+		{
+			this.circle = L.circle(super.getPosition(), {
+				color: super.getColor(),
+				fillColor: super.getColor(),
+				fillOpacity: 0.5,
+				radius: this.radius,
+				clickable: true
+			}).addTo(map);
+		}
 		this.circle.on("click", (e) => {node_select(this);});
 	}
 
 
-	// Edit methods
+	// Public Edit methods
 	update(data)
 	{
 		super.update(data.user, data.pos, data.lock);
@@ -40,10 +55,10 @@ class cCircle extends cElement
 	{
 		this.circle.remove();
 	}
-	updateCircle()
+	updateVisual(selected)
 	{
 		this.removeElem();
-		this.setupCircle();
+		this.setupCircle(selected);
 	}	
 	select()
 	{
