@@ -375,7 +375,9 @@ $(function(){
 			showAlert(`${user.name} deleted your element.`, AlertColor.Deleted, user, 3.5, pos);
 		});
 		socket.on('userRequestFocus', function(user, pos){
-			showAlert(`${user.name} wants you to focus on ${pos}`, AlertColor.Focus, user, 6, pos);
+			let latText = ("[" + pos.lat).substring(0, pos.lat < 0 ? 9 : 8);
+			let lngText = (";" + pos.lng).substring(0, pos.lng < 0 ? 9 : 8);
+			showAlert(`${user.name} wants you to focus on ${latText}${lngText}]`, AlertColor.Focus, user, 6, pos);
 		});
 		socket.on('requestFocusOk', function(pos) {
 			L.popup().setLatLng(pos).setContent('Focus Requested Here').openOn(map);
