@@ -273,8 +273,8 @@ var onDeleteButtonClick = function() {
 
 // ===========================================
 
-const ip = 'localhost';
-const port = 3000;
+// const ip = process.env.IP || 'localhost';
+// const port = process.env.PORT || 3000;
 
 var localUser;
 var socket;
@@ -290,7 +290,8 @@ $(function(){
 		}
 
 		$('#login_div').hide();
-		socket = io(`ws://${ip}:${port}`);	
+		// socket = io(`ws://${ip}:${port}`);	
+		socket = io();
 	
 		
 		// Setup socket callbacks
