@@ -1,5 +1,5 @@
 ### To locally run...
-clone this repo and type in the terminal : 
+clone this repo and type in the terminal :       
 `npm install express express-handlebars`         
 `npm install socket.io-client`      
 `node app.js`      
